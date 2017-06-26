@@ -131,7 +131,9 @@ void scaleHkxAnimationDuration(std::string sourceXmlPath, std::string outputXmlP
 
 	std::string originalSkeletonName = binding->m_originalSkeletonName;
 
-	hkaInterleavedUncompressedAnimation* originalAnimRaw = new hkaInterleavedUncompressedAnimation(*animation);
+	hkaInterleavedUncompressedAnimation* originalAnim = new hkaInterleavedUncompressedAnimation(*animation);
+
+	int boneCount = originalAnim->m_numberOfTransformTracks;
 
 	rootContainer->m_namedVariants.clear();
 	delete animContainer->m_bindings[0];
@@ -139,16 +141,62 @@ void scaleHkxAnimationDuration(std::string sourceXmlPath, std::string outputXmlP
 
 	// Create our new stuff
 
-	hkaInterleavedUncompressedAnimation* newAnimRaw = new hkaInterleavedUncompressedAnimation(*originalAnimRaw);
-	hkaSplineCompressedAnimation* newAnim = new hkaSplineCompressedAnimation(*newAnimRaw);
+	hkaInterleavedUncompressedAnimation* newAnim = new hkaInterleavedUncompressedAnimation();
+
+	newAnim->m_duration = originalAnim->m_duration * durationScale;
+	newAnim->m_annotationTracks = originalAnim->m_annotationTracks;
+	newAnim->m_numberOfTransformTracks = boneCount;
+
+	int frameCount = 0;
+
+	// Scale frames
+
+	hkLocalArray<hkQsTransform> frameSample(boneCount);
+	frameSample.setSize(boneCount);
+	const float frameRate = 30.0f;
+	const float frameDuration = 1.0f / frameRate;
+	float duration = newAnim->m_duration - frameDuration * 0.1f;
+	for (float time = 0.0f; time <= duration; time += frameDuration) {
+		originalAnim->sampleTracks(time / durationScale, frameSample.begin(), NULL);
+		newAnim->m_transforms.append(frameSample);
+		++frameCount;
+	}
+
+	// Scale motion
+
+	const hkaDefaultAnimatedReferenceFrame* originalMotion = static_cast<const hkaDefaultAnimatedReferenceFrame*>(originalAnim->getExtractedMotion());
+
+	hkLocalArray<hkVector4> motionFrames(frameCount);
+	motionFrames.setSize(frameCount);
+	hkQsTransform motionFrame;
+
+	hkaDefaultAnimatedReferenceFrame* newMotion = new hkaDefaultAnimatedReferenceFrame();
+	newMotion->m_duration = originalMotion->getDuration() * durationScale;
+	newMotion->m_forward = originalMotion->m_forward;
+	newMotion->m_up = originalMotion->m_up;
+	newMotion->m_frameType = originalMotion->m_frameType;
+	newAnim->setExtractedMotion(newMotion);
+
+	for (int n = 0; n < frameCount; ++n) {
+		float originalTimeRatio = (float)n / (float)(frameCount - 1);
+		float originalTime = originalAnim->m_duration * originalTimeRatio;
+
+		originalAnim->getExtractedMotionReferenceFrame(originalTime, motionFrame);
+		hkVector4 vec = motionFrame.getTranslation();
+		motionFrames[n] = vec;
+	}
+	newMotion->m_referenceFrameSamples = motionFrames;
+	
+	// Apply
+	hkaSplineCompressedAnimation* newAnimCompressed = new hkaSplineCompressedAnimation(*newAnim);
 
 	binding = new hkaAnimationBinding();
-	binding->m_animation = newAnim;
+	binding->m_animation = newAnimCompressed;
 	binding->m_originalSkeletonName = originalSkeletonName.c_str();
 	binding->m_transformTrackToBoneIndices = boneIndicesCopy;
 
 	animContainer = new hkaAnimationContainer();
-	animContainer->m_animations.pushBack(newAnim);
+	animContainer->m_animations.pushBack(newAnimCompressed);
 	animContainer->m_bindings.pushBack(binding);
 
 	hkRootLevelContainer::NamedVariant variant = hkRootLevelContainer::NamedVariant(
