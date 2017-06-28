@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <vector>
 #include <exception>
+#include <algorithm>
 
 typedef unsigned char byte;
 
@@ -266,7 +267,7 @@ struct AnimGroup {
 };
 
 struct Element {
-	int offsets[4];
+	int offsets[3];
 	float startTime;
 	float endTime;
 	int type;
@@ -334,8 +335,6 @@ struct TaeFile {
 	std::vector<AnimId> animIds;
 	std::vector<AnimGroup> animGroups;
 	std::vector<AnimData> animData;
-
-	FILE* fileHandle;
 };
 
 std::wstring readNameW(FILE* file, int offset) {
@@ -367,19 +366,8 @@ std::wstring readNameW(FILE* file) {
 	return readNameW(file, offset);
 }
 
-void scaleTaeAnimationDuration(std::string sourceTaePath) {
-
-}
-
 // Special thanks to Nyxojaele's 010 templates for making this easy for me.
-TaeFile* readTaeFile(std::string sourceTaePath) {
-	FILE* file = fopen(sourceTaePath.c_str(), "rb+");
-
-	if (file == NULL) {
-		printf("Cannot open file: %s\n", sourceTaePath.c_str());
-		return NULL;
-	}
-
+TaeFile* readTaeFile(FILE* file) {
 	TaeFile* taeFile = new TaeFile;
 	fread(&taeFile->header, 1, sizeof(TaeFile::Header), file);
 
@@ -454,18 +442,107 @@ TaeFile* readTaeFile(std::string sourceTaePath) {
 		animData.animFile = animFile;
 	}
 
-	taeFile->fileHandle = file;
-
 	return taeFile;
 }
 
-void taeTool(int argCount, const char** args) {
-	std::string sourceTaePath = args[0];
+void scaleTaeAnimationDuration(std::wstring sourceTaePath, std::wstring animFileName, float scale) {
+	FILE* file = _wfopen(sourceTaePath.c_str(), L"rb+");
 
-	TaeFile* taeFile = readTaeFile(sourceTaePath);
+	if (file == NULL) {
+		printf("Cannot open file: %s\n", sourceTaePath.c_str());
+		return;
+	}
+
+	TaeFile* taeFile = readTaeFile(file);
+
+	byte* bytes = NULL;
+	int fileSize = 0;
+	std::vector<Element>* elements = NULL;
+
+	std::transform(animFileName.begin(), animFileName.end(), animFileName.begin(), towlower);
+
+	bool found = false;
+	for (size_t n = 0; n < taeFile->animData.size(); ++n) {
+		std::wstring nameLowercase = taeFile->animData[n].animFile.name;
+		std::transform(nameLowercase.begin(), nameLowercase.end(), nameLowercase.begin(), towlower);
+
+		std::wstring nameWithoutWin = nameLowercase;
+		if (nameWithoutWin.size() > 3) {
+			nameWithoutWin.resize(nameWithoutWin.size() - 3);
+		}
+
+		if (nameLowercase == animFileName || nameWithoutWin == animFileName) {
+			found = true;
+
+			elements = &taeFile->animData[n].elements;
+
+			fileSize = taeFile->header.fileSize;
+			bytes = new byte[fileSize];
+			fseek(file, 0, SEEK_SET);
+			fread(bytes, 1, fileSize, file);
+
+			break;
+		}
+	}
+
+	if (found) {
+		std::wstring destTaePath = sourceTaePath + L".out";
+
+		wprintf_s(L"Found anim file, saving to %s...\n", destTaePath.c_str());
+
+		std::vector<int> offsets;
+
+		for (size_t e = 0; e < elements->size(); ++e) {
+			offsets.push_back((*elements)[e].offsets[0]);
+			offsets.push_back((*elements)[e].offsets[1]);
+		}
+
+		std::vector<int>::iterator it = std::unique(offsets.begin(), offsets.end());
+		offsets.resize(std::distance(offsets.begin(), it));
+
+		for (int n = 0; n < offsets.size(); ++n){
+			*reinterpret_cast<float*>(&bytes[offsets[n]]) *= scale;
+		}
+
+		_wfreopen(destTaePath.c_str(), L"wb", file);
+
+		fwrite(bytes, 1, fileSize, file);
+
+		printf("Done!\n");
+	}else{
+		_wprintf_p(L"Did not find %s in %s \n", animFileName.c_str(), sourceTaePath.c_str());
+	}
+
+	fclose(file);
 }
 
-int main(int argCount, const char** args)
+void taeTool(int argCount, const wchar_t** args) {
+	const char* usageString =
+		"Usage: tae <command> <args> \n\n"
+		"Commands: scaleDuration(string taePath, string animFileName, float scale) \n\n"
+		"Example: tae scaleDuration c5260.tae a00_3004.hkx 0.25 \n\n"
+	;
+
+	if (argCount < 4 || argCount > 4) {
+		printf("%s", usageString);
+		return;
+	}
+
+	std::wstring command = args[0];
+	std::transform(command.begin(), command.end(), command.begin(), towlower);
+	if (command == L"scaleduration") {
+		std::wstring taePath = args[1];
+		std::wstring fileName = args[2];
+		float scale = (float)_wtof(args[3]);
+		scaleTaeAnimationDuration(taePath, fileName, scale);
+	}
+	else {
+		printf("%s", usageString);
+		return;
+	}
+}
+
+int wmain(int argCount, const wchar_t** args)
 {
 	printf("Hello\n");
 
@@ -480,9 +557,9 @@ int main(int argCount, const char** args)
 	// std::string outputTaePath = "C:/Projects/Dark Souls/Anim research/output.tae";
 
 	for (int n = 0; n < argCount; ++n) {
-		std::string arg = args[n];
+		std::wstring arg = args[n];
 
-		if (arg == "tae") {
+		if (arg == L"tae") {
 			taeTool(argCount - n - 1, &args[n + 1]);
 		}
 	}
