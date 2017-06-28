@@ -254,22 +254,6 @@ void scaleHkxAnimationDuration(std::string sourceXmlPath, std::string outputXmlP
 	fclose(file);
 }
 
-struct TaeHeader {
-	char signature[4];
-	int unk1;
-	int unk2;
-	int fileSize;
-	byte unk3[0x44];
-	int animIdCount;
-	int animIdsOffset;
-	int animGroupsOffset;
-	byte unk4[0x4];
-	int animDataCount;
-	int animDataOffset;
-	byte unk5[0x28];
-	int fileNamesOffset;
-};
-
 struct AnimId {
 	int animId;
 	int offset;
@@ -282,6 +266,7 @@ struct AnimGroup {
 };
 
 struct Element {
+	int offsets[4];
 	float startTime;
 	float endTime;
 	int type;
@@ -326,6 +311,33 @@ struct AnimData {
 	AnimFile animFile;
 };
 
+struct TaeFile {
+	struct Header {
+		char signature[4];
+		int unk1;
+		int unk2;
+		int fileSize;
+		byte unk3[0x44];
+		int animIdCount;
+		int animIdsOffset;
+		int animGroupsOffset;
+		byte unk4[0x4];
+		int animDataCount;
+		int animDataOffset;
+		byte unk5[0x28];
+		int fileNamesOffset;
+	} header;
+
+	std::wstring skeletonHkxName;
+	std::wstring sibName;
+
+	std::vector<AnimId> animIds;
+	std::vector<AnimGroup> animGroups;
+	std::vector<AnimData> animData;
+
+	FILE* fileHandle;
+};
+
 std::wstring readNameW(FILE* file, int offset) {
 	long posBuffer = ftell(file);
 
@@ -355,95 +367,102 @@ std::wstring readNameW(FILE* file) {
 	return readNameW(file, offset);
 }
 
+void scaleTaeAnimationDuration(std::string sourceTaePath) {
+
+}
+
 // Special thanks to Nyxojaele's 010 templates for making this easy for me.
-void taeTool(int argCount, const char** args) {
-	std::string sourceTaePath = args[0];
+TaeFile* readTaeFile(std::string sourceTaePath) {
+	FILE* file = fopen(sourceTaePath.c_str(), "rb+");
 
-	FILE* taeFile = fopen(sourceTaePath.c_str(), "rb+");
-
-	if (taeFile == NULL) {
+	if (file == NULL) {
 		printf("Cannot open file: %s\n", sourceTaePath.c_str());
-		return;
+		return NULL;
 	}
 
-	TaeHeader header;
-	fread(&header, 1, sizeof(header), taeFile);
+	TaeFile* taeFile = new TaeFile;
+	fread(&taeFile->header, 1, sizeof(TaeFile::Header), file);
 
-	std::wstring skeletonHkxName = readNameW(taeFile);
-	std::wstring sibName = readNameW(taeFile);
+	taeFile->skeletonHkxName = readNameW(file);
+	taeFile->sibName = readNameW(file);
 
-	fseek(taeFile, header.animIdsOffset, SEEK_SET);
-	std::vector<AnimId> animIds;
-	animIds.resize(header.animIdCount);
-	fread(animIds.data(), sizeof(AnimId), header.animIdCount, taeFile);
+	fseek(file, taeFile->header.animIdsOffset, SEEK_SET);
+	taeFile->animIds.resize(taeFile->header.animIdCount);
+	fread(taeFile->animIds.data(), sizeof(AnimId), taeFile->header.animIdCount, file);
 
-	fseek(taeFile, header.animGroupsOffset, SEEK_SET);
+	fseek(file, taeFile->header.animGroupsOffset, SEEK_SET);
 	int animGroupsCount;
 	int animGroupsDataOffset;
-	fread(&animGroupsCount, sizeof(int), 1, taeFile);
-	fread(&animGroupsDataOffset, sizeof(int), 1, taeFile);
+	fread(&animGroupsCount, sizeof(int), 1, file);
+	fread(&animGroupsDataOffset, sizeof(int), 1, file);
+	taeFile->animGroups.resize(animGroupsCount);
+	fread(taeFile->animGroups.data(), sizeof(AnimGroup), animGroupsCount, file);
 
-	std::vector<AnimGroup> animGroups;
-	animGroups.resize(animGroupsCount);
-	fread(animGroups.data(), sizeof(AnimGroup), animGroupsCount, taeFile);
-
-	fseek(taeFile, header.animDataOffset, SEEK_SET);
-	std::vector<AnimData> animData;
-	animData.resize(header.animDataCount);
-	for (size_t n = 0; n < animData.size(); ++n) {
-		fread(&animData[n].header, sizeof(AnimData::Header), 1, taeFile);
+	fseek(file, taeFile->header.animDataOffset, SEEK_SET);
+	taeFile->animData.resize(taeFile->header.animDataCount);
+	for (size_t n = 0; n < taeFile->animData.size(); ++n) {
+		fread(&taeFile->animData[n].header, sizeof(AnimData::Header), 1, file);
 	}
 	
-	for (size_t n = 0; n < animData.size(); ++n) {
-		AnimData::Header animHeader = animData[n].header;
+	for (size_t n = 0; n < taeFile->animData.size(); ++n) {
+		AnimData& animData = taeFile->animData[n];
+		AnimData::Header animHeader = animData.header;
 
 		if (animHeader.dataElementCount == 0) {
 			continue;
 		}
 
-		fseek(taeFile, animHeader.dataArrayOffset, SEEK_SET);
+		fseek(file, animHeader.dataArrayOffset, SEEK_SET);
 
-		animData[n].elements = std::vector<Element>();
+		animData.elements = std::vector<Element>();
 		for(int e = 0; e < animHeader.dataElementCount; ++e){
-			int offsets[3];
-			fread(&offsets, sizeof(offsets), 1, taeFile);
-
 			Element element;
 
-			long posBuffer = ftell(taeFile);
-			{
-				fseek(taeFile, offsets[0], SEEK_SET);
-				fread(&element.startTime, sizeof(float), 1, taeFile);
-				fseek(taeFile, offsets[1], SEEK_SET);
-				fread(&element.endTime, sizeof(float), 1, taeFile);
-				fseek(taeFile, offsets[2], SEEK_SET);
-				fread(&element.type, sizeof(int), 1, taeFile);
-			}
-			fseek(taeFile, posBuffer, SEEK_SET);
+			fread(element.offsets, sizeof(element.offsets), 1, file);
 
-			animData[n].elements.push_back(element);
+
+			long posBuffer = ftell(file);
+			{
+				fseek(file, element.offsets[0], SEEK_SET);
+				fread(&element.startTime, sizeof(float), 1, file);
+				fseek(file, element.offsets[1], SEEK_SET);
+				fread(&element.endTime, sizeof(float), 1, file);
+				fseek(file, element.offsets[2], SEEK_SET);
+				fread(&element.type, sizeof(int), 1, file);
+			}
+			fseek(file, posBuffer, SEEK_SET);
+
+			animData.elements.push_back(element);
 		}
 
 		AnimFile animFile;
-		fseek(taeFile, animHeader.animFileOffset, SEEK_SET);
-		fread(&animFile.type, sizeof(int), 1, taeFile);
+		fseek(file, animHeader.animFileOffset, SEEK_SET);
+		fread(&animFile.type, sizeof(int), 1, file);
 		if (animFile.type == 0) {
-			fread(&animFile.u.animFileType0, sizeof(AnimFile::U::AnimFileType0), 1, taeFile);
+			fread(&animFile.u.animFileType0, sizeof(AnimFile::U::AnimFileType0), 1, file);
 
-			std::wstring name = readNameW(taeFile, animFile.u.animFileType0.nameOffset);
+			std::wstring name = readNameW(file, animFile.u.animFileType0.nameOffset);
 			animFile.name = name;
 		}
 		else if (animFile.type == 1) {
-			fread(&animFile.u.animFileType1, sizeof(AnimFile::U::AnimFileType1), 1, taeFile);
+			fread(&animFile.u.animFileType1, sizeof(AnimFile::U::AnimFileType1), 1, file);
 		}
 		else {
 			printf("Unknown type: %n\n", animFile.type);
 			throw new std::exception();
 		}
-		animData[n].animFile = animFile;
+		animData.animFile = animFile;
 	}
 
-	fclose(taeFile);
+	taeFile->fileHandle = file;
+
+	return taeFile;
+}
+
+void taeTool(int argCount, const char** args) {
+	std::string sourceTaePath = args[0];
+
+	TaeFile* taeFile = readTaeFile(sourceTaePath);
 }
 
 int main(int argCount, const char** args)
