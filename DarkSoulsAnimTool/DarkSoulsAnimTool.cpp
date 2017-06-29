@@ -266,7 +266,7 @@ struct AnimGroup {
 	int firstAnimIdOffset;
 };
 
-struct Element {
+struct Event {
 	int offsets[3];
 	float startTime;
 	float endTime;
@@ -299,16 +299,16 @@ struct AnimFile {
 
 struct AnimData {
 	struct Header{
-		int dataElementCount;
-		int dataArrayOffset;
+		int eventCount;
+		int eventOffset;
 		int unk1;
 		int unk2;
 		int unk3;
-		int someElementOffset;
+		int someEventOffset;
 		int animFileOffset;
 	} header;
 
-	std::vector<Element> elements;
+	std::vector<Event> events;
 	AnimFile animFile;
 };
 
@@ -396,31 +396,31 @@ TaeFile* readTaeFile(FILE* file) {
 		AnimData& animData = taeFile->animData[n];
 		AnimData::Header animHeader = animData.header;
 
-		if (animHeader.dataElementCount == 0) {
+		if (animHeader.eventCount == 0) {
 			continue;
 		}
 
-		fseek(file, animHeader.dataArrayOffset, SEEK_SET);
+		fseek(file, animHeader.eventOffset, SEEK_SET);
 
-		animData.elements = std::vector<Element>();
-		for(int e = 0; e < animHeader.dataElementCount; ++e){
-			Element element;
+		animData.events = std::vector<Event>();
+		for(int e = 0; e < animHeader.eventCount; ++e){
+			Event event;
 
-			fread(element.offsets, sizeof(element.offsets), 1, file);
-
+			fread(event.offsets, sizeof(event.offsets), 1, file);
 
 			long posBuffer = ftell(file);
 			{
-				fseek(file, element.offsets[0], SEEK_SET);
-				fread(&element.startTime, sizeof(float), 1, file);
-				fseek(file, element.offsets[1], SEEK_SET);
-				fread(&element.endTime, sizeof(float), 1, file);
-				fseek(file, element.offsets[2], SEEK_SET);
-				fread(&element.type, sizeof(int), 1, file);
+				fseek(file, event.offsets[0], SEEK_SET);
+				fread(&event.startTime, sizeof(float), 1, file);
+				fseek(file, event.offsets[1], SEEK_SET);
+				fread(&event.endTime, sizeof(float), 1, file);
+				fseek(file, event.offsets[2], SEEK_SET);
+				fread(&event.type, sizeof(int), 1, file);
+				}
 			}
 			fseek(file, posBuffer, SEEK_SET);
 
-			animData.elements.push_back(element);
+			animData.events.push_back(event);
 		}
 
 		AnimFile animFile;
@@ -457,7 +457,7 @@ void scaleTaeAnimationDuration(std::wstring sourceTaePath, std::wstring animFile
 
 	byte* bytes = NULL;
 	int fileSize = 0;
-	std::vector<Element>* elements = NULL;
+	std::vector<Event>* events = NULL;
 
 	std::transform(animFileName.begin(), animFileName.end(), animFileName.begin(), towlower);
 
@@ -474,7 +474,7 @@ void scaleTaeAnimationDuration(std::wstring sourceTaePath, std::wstring animFile
 		if (nameLowercase == animFileName || nameWithoutWin == animFileName) {
 			found = true;
 
-			elements = &taeFile->animData[n].elements;
+			events = &taeFile->animData[n].events;
 
 			fileSize = taeFile->header.fileSize;
 			bytes = new byte[fileSize];
@@ -492,15 +492,15 @@ void scaleTaeAnimationDuration(std::wstring sourceTaePath, std::wstring animFile
 
 		std::vector<int> offsets;
 
-		for (size_t e = 0; e < elements->size(); ++e) {
-			offsets.push_back((*elements)[e].offsets[0]);
-			offsets.push_back((*elements)[e].offsets[1]);
+		for (size_t e = 0; e < events->size(); ++e) {
+			offsets.push_back((*events)[e].offsets[0]);
+			offsets.push_back((*events)[e].offsets[1]);
 		}
 
 		std::vector<int>::iterator it = std::unique(offsets.begin(), offsets.end());
 		offsets.resize(std::distance(offsets.begin(), it));
 
-		for (int n = 0; n < offsets.size(); ++n){
+		for (size_t n = 0; n < offsets.size(); ++n){
 			*reinterpret_cast<float*>(&bytes[offsets[n]]) *= scale;
 		}
 
