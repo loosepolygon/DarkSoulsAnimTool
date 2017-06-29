@@ -267,10 +267,81 @@ struct AnimGroup {
 };
 
 struct Event {
-	int offsets[3];
+	int type;
 	float startTime;
 	float endTime;
-	int type;
+
+	union U {
+		struct T0MovementInfo {
+			int unk1;
+			int unk2;
+			int unk3;
+			int unk4;
+		} t0MovementInfo;
+
+		struct T1ParticleEffect {
+			int unk1;
+			int unk2;
+			int unk3;
+			int unk4;
+		} t1ParticleEffect;
+
+		struct T16Unknown {
+			int unk1;
+			int unk2;
+			int unk3;
+			int unk4;
+			int unk5;
+		} t16Unknown;
+
+		struct T96Unknown {
+			int unk1;
+			int unk2;
+			int unk3;
+			int unk4;
+		} t96Unknown;
+
+		struct T108Unknown {
+			int unk1;
+			int unk2;
+			int unk3;
+			int unk4;
+		} t108Unknown;
+
+		struct T128Unknown {
+			int unk1;
+			int unk2;
+			int unk3;
+		} t128Unknown;
+
+		struct T129SoundEffect {
+			int unk1;
+			int unk2;
+			int unk3;
+			int unk4;
+			int unk5;
+		} t129SoundEffect;
+
+		struct T144Unknown {
+			int unk1;
+			int unk2;
+			int unk3;
+			int unk4;
+		} t144Unknown;
+
+		struct T224HitboxInfo {
+			int unk1;
+			int unk2;
+		} t224HitboxInfo;
+
+		struct T303Unknown {
+			int unk1;
+			int unk2;
+		} t303Unknown;
+	} u;
+
+	bool shouldScaleDuration;
+	int offsets[3];
 };
 
 struct AnimFile {
@@ -416,7 +487,43 @@ TaeFile* readTaeFile(FILE* file) {
 				fread(&event.endTime, sizeof(float), 1, file);
 				fseek(file, event.offsets[2], SEEK_SET);
 				fread(&event.type, sizeof(int), 1, file);
+
+				event.shouldScaleDuration = true;
+
+				int eventSize;
+				switch (event.type){
+				case 0: eventSize = 20; break;
+				case 1: eventSize = 20; break;
+				case 2: eventSize = 24; break;
+				case 5: eventSize = 16; break;
+				case 16: eventSize = 24; break;
+				case 66: eventSize = 12; break;
+				case 96: eventSize = 20; break;
+				case 108: eventSize = 20; break;
+				case 112: eventSize = 16; break;
+				case 128: eventSize = 16; break;
+				case 129: eventSize = 24; event.shouldScaleDuration = false; break;
+				case 144: eventSize = 20; break;
+				case 193: eventSize = 16; break;
+				case 224: eventSize = 12; break;
+				case 231: eventSize = 12; break;
+				case 303: eventSize = 12; break;
+				case 304: eventSize = 16; break;
+				default:
+					printf("Unknown event type: %d \n", event.type);
+
+					printf("Anim %d  Event: %d  offset: %x \n", n, e, event.offsets[2]);
+
+					// throw new std::exception();
+					goto end;
 				}
+
+				// Subtract size of type, already read.
+				eventSize -= sizeof(int);
+				
+				fread(&event.u, eventSize, 1, file);
+
+end:;
 			}
 			fseek(file, posBuffer, SEEK_SET);
 
@@ -490,18 +597,35 @@ void scaleTaeAnimationDuration(std::wstring sourceTaePath, std::wstring animFile
 
 		wprintf_s(L"Found anim file, saving to %s...\n", destTaePath.c_str());
 
-		std::vector<int> offsets;
+		std::vector<int> offsetsChanged;
 
 		for (size_t e = 0; e < events->size(); ++e) {
-			offsets.push_back((*events)[e].offsets[0]);
-			offsets.push_back((*events)[e].offsets[1]);
-		}
+			Event& event = (*events)[e];
 
-		std::vector<int>::iterator it = std::unique(offsets.begin(), offsets.end());
-		offsets.resize(std::distance(offsets.begin(), it));
+			void* ptr = &bytes[event.offsets[0]];
+			float& startTimeRef = *reinterpret_cast<float*>(ptr);
+			ptr = &bytes[event.offsets[1]];
+			float& endTimeRef = *reinterpret_cast<float*>(ptr);
+			float duration = endTimeRef - startTimeRef;
 
-		for (size_t n = 0; n < offsets.size(); ++n){
-			*reinterpret_cast<float*>(&bytes[offsets[n]]) *= scale;
+			int offset = event.offsets[0];
+			bool found = std::find(offsetsChanged.begin(), offsetsChanged.end(), offset) != offsetsChanged.end();
+			if (found == false) {
+				startTimeRef *= scale;
+				offsetsChanged.push_back(offset);
+			}
+
+			offset = event.offsets[1];
+			found = std::find(offsetsChanged.begin(), offsetsChanged.end(), offset) != offsetsChanged.end();
+			if (found == false) {
+				if (event.shouldScaleDuration) {
+					endTimeRef *= scale;
+				}else{
+					endTimeRef = startTimeRef + duration;
+				}
+
+				offsetsChanged.push_back(offset);
+			}
 		}
 
 		_wfreopen(destTaePath.c_str(), L"wb", file);
