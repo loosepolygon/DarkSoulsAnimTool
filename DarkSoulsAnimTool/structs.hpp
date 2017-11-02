@@ -157,4 +157,9 @@ struct TaeFile {
 };
 
 TaeFile* readTaeFile(FILE* file);
-void taeTool(int argCount, const wchar_t** args);
+
+void scaleAnim(
+   std::wstring sourceTaePath,
+   std::wstring animFileName,
+   float scale
+);

@@ -7,7 +7,7 @@
 #include <vector>
 #include <algorithm>
 
-void scaleTaeAnimationDuration(
+void scaleAnim(
    std::wstring sourceTaePath,
    std::wstring animFileName,
    float scale
@@ -97,29 +97,4 @@ void scaleTaeAnimationDuration(
 	}
 
 	fclose(file);
-}
-
-void taeTool(int argCount, const wchar_t** args) {
-	const char* usageString =
-		"Usage: tae <command> <args> \n\n"
-		"Commands: scaleDuration(string taePath, string animFileName, float scale) \n\n"
-		"Example: tae scaleDuration c5260.tae a00_3004.hkx 0.25 \n\n"
-	;
-
-	if (argCount < 4 || argCount > 4) {
-		printf("%s", usageString);
-		return;
-	}
-
-	std::wstring command = args[0];
-	std::transform(command.begin(), command.end(), command.begin(), towlower);
-	if (command == L"scaleduration") {
-		std::wstring taePath = args[1];
-		std::wstring fileName = args[2];
-		float scale = (float)_wtof(args[3]);
-		scaleTaeAnimationDuration(taePath, fileName, scale);
-	}else{
-		printf("%s", usageString);
-		return;
-	}
 }

@@ -4,16 +4,17 @@
 
 #include <iostream>
 #include <algorithm>
+#include <queue>
 
-
+/*
 void HK_CALL havokErrorReport(const char* msg, void* userContext){
 	printf("%s\n", msg);
 }
 
 hkResource* hkSerializeUtilLoad(hkStreamReader* stream
-	, hkSerializeUtil::ErrorDetails* detailsOut/*=HK_NULL*/
-	, const hkClassNameRegistry* classReg/*=HK_NULL*/
-	, hkSerializeUtil::LoadOptions options/*=hkSerializeUtil::LOAD_DEFAULT*/)
+	, hkSerializeUtil::ErrorDetails* detailsOut
+	, const hkClassNameRegistry* classReg
+	, hkSerializeUtil::LoadOptions options)
 {
 	__try
 	{
@@ -251,6 +252,30 @@ void scaleHkxAnimationDuration(std::string sourceXmlPath, std::string outputXmlP
 
    fclose(file);
 }
+*/
+
+void checkEmpty(std::queue<std::wstring>& words) {
+   if (words.empty()) {
+      printf("Not enough args\n");
+      exit(1);
+   }
+}
+
+std::wstring popString(std::queue<std::wstring>& words) {
+   checkEmpty(words);
+
+   std::wstring result = words.front();
+   words.pop();
+   return result;
+}
+
+float popFloat(std::queue<std::wstring>& words) {
+   checkEmpty(words);
+
+   float result = (float)_wtof(words.front().c_str());
+   words.pop();
+   return result;
+}
 
 int wmain(int argCount, const wchar_t** args)
 {
@@ -266,11 +291,31 @@ int wmain(int argCount, const wchar_t** args)
 	// std::string sourceTaePath = "C:/Projects/Dark Souls/Anim research/c5260.orig.tae";
 	// std::string outputTaePath = "C:/Projects/Dark Souls/Anim research/output.tae";
 
-	for (int n = 0; n < argCount; ++n) {
-		std::wstring arg = args[n];
 
-		if (arg == L"tae") {
-			taeTool(argCount - n - 1, &args[n + 1]);
+   std::queue<std::wstring> words;
+   for (int n = 1; n < argCount; ++n) {
+      words.push(args[n]);
+   }
+
+   checkEmpty(words);
+
+   std::wstring command = popString(words);
+   std::transform(command.begin(), command.end(), command.begin(), towlower);
+
+	for (int n = 0; n < argCount; ++n) {
+		if (command == L"scaleanim") {
+         /*scaleAnim(
+            popString(words),
+            popString(words),
+            popFloat(words)
+         );*/
+         // C++ provides no guarantee that the two popStrings will be evaluated before the
+         // popFloat, it's undefined. I hate this language so much.
+
+         std::wstring s1 = popString(words);
+         std::wstring s2 = popString(words);
+         float f1 = popFloat(words);
+         scaleAnim(s1, s2, f1);
 		}
 	}
 
