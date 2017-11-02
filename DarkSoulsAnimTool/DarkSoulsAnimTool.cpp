@@ -279,8 +279,6 @@ float popFloat(std::queue<std::wstring>& words) {
 
 int wmain(int argCount, const wchar_t** args)
 {
-	printf("Hello\n");
-
 	//hkMemoryRouter* memoryRouter = hkMemoryInitUtil::initDefault(hkMallocAllocator::m_defaultMallocAllocator, hkMemorySystem::FrameInfo(1024 * 1024));
 	//hkBaseSystem::init(memoryRouter, havokErrorReport);
 
@@ -316,7 +314,10 @@ int wmain(int argCount, const wchar_t** args)
          std::wstring s2 = popString(words);
          float f1 = popFloat(words);
          scaleAnim(s1, s2, f1);
-		}
+      }else if (command == L"exporttae") {
+         std::wstring s1 = popString(words);
+         exportTae(s1);
+      }
 	}
 
 	int unused;

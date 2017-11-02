@@ -7,6 +7,7 @@
 
 // Havok includes
 
+/*
 // [id=keycode]
 #include <Common/Base/keycode.cxx>
 
@@ -105,3 +106,5 @@
 
 // Platform specific initialization
 // #include <Common/Base/System/Init/PlatformInit.cxx>
+
+*/

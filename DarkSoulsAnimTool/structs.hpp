@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <vector>
 
@@ -137,14 +139,15 @@ struct TaeFile {
 		int unk1;
 		int unk2;
 		int fileSize;
-		byte unk3[0x44];
+		int unk3[16];
+      int unk4;
 		int animIdCount;
 		int animIdsOffset;
 		int animGroupsOffset;
-		byte unk4[0x4];
+      int unk5;
 		int animDataCount;
 		int animDataOffset;
-		byte unk5[0x28];
+		int unk6[10];
 		int fileNamesOffset;
 	} header;
 
@@ -163,3 +166,5 @@ void scaleAnim(
    std::wstring animFileName,
    float scale
 );
+
+void exportTae(std::wstring sourceTaePath);
