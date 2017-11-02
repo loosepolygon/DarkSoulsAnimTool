@@ -8,101 +8,101 @@
 
 /*
 void HK_CALL havokErrorReport(const char* msg, void* userContext){
-	printf("%s\n", msg);
+   printf("%s\n", msg);
 }
 
 hkResource* hkSerializeUtilLoad(hkStreamReader* stream
-	, hkSerializeUtil::ErrorDetails* detailsOut
-	, const hkClassNameRegistry* classReg
-	, hkSerializeUtil::LoadOptions options)
+   , hkSerializeUtil::ErrorDetails* detailsOut
+   , const hkClassNameRegistry* classReg
+   , hkSerializeUtil::LoadOptions options)
 {
-	__try
-	{
-		return hkSerializeUtil::load(stream, detailsOut, options);
-	}
-	__except (EXCEPTION_EXECUTE_HANDLER)
-	{
-		if (detailsOut == NULL)
-			detailsOut->id = hkSerializeUtil::ErrorDetails::ERRORID_LOAD_FAILED;
-		return NULL;
-	}
+   __try
+   {
+      return hkSerializeUtil::load(stream, detailsOut, options);
+   }
+   __except (EXCEPTION_EXECUTE_HANDLER)
+   {
+      if (detailsOut == NULL)
+         detailsOut->id = hkSerializeUtil::ErrorDetails::ERRORID_LOAD_FAILED;
+      return NULL;
+   }
 }
 
 hkResult hkSerializeLoad(hkStreamReader *reader
-	, hkVariant &root
-	, hkResource *&resource)
+   , hkVariant &root
+   , hkResource *&resource)
 {
-	hkTypeInfoRegistry &defaultTypeRegistry = hkTypeInfoRegistry::getInstance();
-	hkDefaultClassNameRegistry &defaultRegistry = hkDefaultClassNameRegistry::getInstance();
+   hkTypeInfoRegistry &defaultTypeRegistry = hkTypeInfoRegistry::getInstance();
+   hkDefaultClassNameRegistry &defaultRegistry = hkDefaultClassNameRegistry::getInstance();
 
-	hkBinaryPackfileReader bpkreader;
-	hkXmlPackfileReader xpkreader;
-	resource = NULL;
-	hkSerializeUtil::FormatDetails formatDetails;
-	hkSerializeUtil::detectFormat(reader, formatDetails);
-	hkBool32 isLoadable = hkSerializeUtil::isLoadable(reader);
-	if (!isLoadable && formatDetails.m_formatType != hkSerializeUtil::FORMAT_TAGFILE_XML)
-	{
-		return HK_FAILURE;
-	}
-	else
-	{
-		switch (formatDetails.m_formatType)
-		{
-		case hkSerializeUtil::FORMAT_PACKFILE_BINARY:
-		{
-			bpkreader.loadEntireFile(reader);
-			bpkreader.finishLoadedObjects(defaultTypeRegistry);
-			if (hkPackfileData* pkdata = bpkreader.getPackfileData())
-			{
-				hkArray<hkVariant>& obj = bpkreader.getLoadedObjects();
-				for (int i = 0, n = obj.getSize(); i<n; ++i)
-				{
-					hkVariant& value = obj[i];
-					if (value.m_class->hasVtable())
-						defaultTypeRegistry.finishLoadedObject(value.m_object, value.m_class->getName());
-				}
-				resource = pkdata;
-				resource->addReference();
-			}
-			root = bpkreader.getTopLevelObject();
-		}
-		break;
+   hkBinaryPackfileReader bpkreader;
+   hkXmlPackfileReader xpkreader;
+   resource = NULL;
+   hkSerializeUtil::FormatDetails formatDetails;
+   hkSerializeUtil::detectFormat(reader, formatDetails);
+   hkBool32 isLoadable = hkSerializeUtil::isLoadable(reader);
+   if (!isLoadable && formatDetails.m_formatType != hkSerializeUtil::FORMAT_TAGFILE_XML)
+   {
+      return HK_FAILURE;
+   }
+   else
+   {
+      switch (formatDetails.m_formatType)
+      {
+      case hkSerializeUtil::FORMAT_PACKFILE_BINARY:
+      {
+         bpkreader.loadEntireFile(reader);
+         bpkreader.finishLoadedObjects(defaultTypeRegistry);
+         if (hkPackfileData* pkdata = bpkreader.getPackfileData())
+         {
+            hkArray<hkVariant>& obj = bpkreader.getLoadedObjects();
+            for (int i = 0, n = obj.getSize(); i<n; ++i)
+            {
+               hkVariant& value = obj[i];
+               if (value.m_class->hasVtable())
+                  defaultTypeRegistry.finishLoadedObject(value.m_object, value.m_class->getName());
+            }
+            resource = pkdata;
+            resource->addReference();
+         }
+         root = bpkreader.getTopLevelObject();
+      }
+      break;
 
-		case hkSerializeUtil::FORMAT_PACKFILE_XML:
-		{
-			xpkreader.loadEntireFile(reader);
-			if (hkPackfileData* pkdata = xpkreader.getPackfileData())
-			{
-				hkArray<hkVariant>& obj = xpkreader.getLoadedObjects();
-				for (int i = 0, n = obj.getSize(); i<n; ++i)
-				{
-					hkVariant& value = obj[i];
-					if (value.m_class->hasVtable())
-						defaultTypeRegistry.finishLoadedObject(value.m_object, value.m_class->getName());
-				}
-				resource = pkdata;
-				resource->addReference();
-				root = xpkreader.getTopLevelObject();
-			}
-		}
-		break;
+      case hkSerializeUtil::FORMAT_PACKFILE_XML:
+      {
+         xpkreader.loadEntireFile(reader);
+         if (hkPackfileData* pkdata = xpkreader.getPackfileData())
+         {
+            hkArray<hkVariant>& obj = xpkreader.getLoadedObjects();
+            for (int i = 0, n = obj.getSize(); i<n; ++i)
+            {
+               hkVariant& value = obj[i];
+               if (value.m_class->hasVtable())
+                  defaultTypeRegistry.finishLoadedObject(value.m_object, value.m_class->getName());
+            }
+            resource = pkdata;
+            resource->addReference();
+            root = xpkreader.getTopLevelObject();
+         }
+      }
+      break;
 
-		case hkSerializeUtil::FORMAT_TAGFILE_BINARY:
-		case hkSerializeUtil::FORMAT_TAGFILE_XML:
-		default:
-		{
-			hkSerializeUtil::ErrorDetails detailsOut;
-			hkSerializeUtil::LoadOptions loadflags = hkSerializeUtil::LOAD_FAIL_IF_VERSIONING;
-			resource = hkSerializeUtilLoad(reader, &detailsOut, &defaultRegistry, loadflags);
-			root.m_object = resource->getContents<hkRootLevelContainer>();
-			if (root.m_object != NULL)
-				root.m_class = &((hkRootLevelContainer*)root.m_object)->staticClass();
-		}
-		break;
-		}
-	}
-	return root.m_object != NULL ? HK_SUCCESS : HK_FAILURE;
+      case hkSerializeUtil::FORMAT_TAGFILE_BINARY:
+      case hkSerializeUtil::FORMAT_TAGFILE_XML:
+      default:
+      {
+         hkSerializeUtil::ErrorDetails detailsOut;
+         hkSerializeUtil::LoadOptions loadflags = hkSerializeUtil::LOAD_FAIL_IF_VERSIONING;
+         resource = hkSerializeUtilLoad(reader, &detailsOut, &defaultRegistry, loadflags);
+         root.m_object = resource->getContents<hkRootLevelContainer>();
+         if (root.m_object != NULL)
+            root.m_class = &((hkRootLevelContainer*)root.m_object)->staticClass();
+      }
+      break;
+      }
+   }
+   return root.m_object != NULL ? HK_SUCCESS : HK_FAILURE;
 }
 
 void scaleHkxAnimationDuration(std::string sourceXmlPath, std::string outputXmlPath, float durationScale) {
@@ -279,15 +279,15 @@ float popFloat(std::queue<std::wstring>& words) {
 
 int wmain(int argCount, const wchar_t** args)
 {
-	//hkMemoryRouter* memoryRouter = hkMemoryInitUtil::initDefault(hkMallocAllocator::m_defaultMallocAllocator, hkMemorySystem::FrameInfo(1024 * 1024));
-	//hkBaseSystem::init(memoryRouter, havokErrorReport);
+   //hkMemoryRouter* memoryRouter = hkMemoryInitUtil::initDefault(hkMallocAllocator::m_defaultMallocAllocator, hkMemorySystem::FrameInfo(1024 * 1024));
+   //hkBaseSystem::init(memoryRouter, havokErrorReport);
 
-	//std::string sourceXmlPath = "C:/Projects/Dark Souls/Anim research/a00_3004.orig.hkx.xml";
-	//std::string outputXmlPath = "C:/Projects/Dark Souls/Anim research/output.hkx.xml";
-	// scaleHkxAnimationDuration(sourceXmlPath, outputXmlPath, 0.25f);
+   //std::string sourceXmlPath = "C:/Projects/Dark Souls/Anim research/a00_3004.orig.hkx.xml";
+   //std::string outputXmlPath = "C:/Projects/Dark Souls/Anim research/output.hkx.xml";
+   // scaleHkxAnimationDuration(sourceXmlPath, outputXmlPath, 0.25f);
 
-	// std::string sourceTaePath = "C:/Projects/Dark Souls/Anim research/c5260.orig.tae";
-	// std::string outputTaePath = "C:/Projects/Dark Souls/Anim research/output.tae";
+   // std::string sourceTaePath = "C:/Projects/Dark Souls/Anim research/c5260.orig.tae";
+   // std::string outputTaePath = "C:/Projects/Dark Souls/Anim research/output.tae";
 
 
    std::queue<std::wstring> words;
@@ -300,8 +300,8 @@ int wmain(int argCount, const wchar_t** args)
    std::wstring command = popString(words);
    std::transform(command.begin(), command.end(), command.begin(), towlower);
 
-	for (int n = 0; n < argCount; ++n) {
-		if (command == L"scaleanim") {
+   for (int n = 0; n < argCount; ++n) {
+      if (command == L"scaleanim") {
          /*scaleAnim(
             popString(words),
             popString(words),
@@ -318,10 +318,10 @@ int wmain(int argCount, const wchar_t** args)
          std::wstring s1 = popString(words);
          exportTae(s1);
       }
-	}
+   }
 
-	int unused;
-	std::cin >> unused;
+   int unused;
+   std::cin >> unused;
 
     return 0;
 }

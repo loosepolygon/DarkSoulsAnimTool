@@ -6,157 +6,157 @@
 typedef unsigned char byte;
 
 struct AnimId {
-	int animId;
-	int offset;
+   int animId;
+   int offset;
 };
 
 struct AnimGroup {
-	int firstAnimId;
-	int lastAnimId;
-	int firstAnimIdOffset;
+   int firstAnimId;
+   int lastAnimId;
+   int firstAnimIdOffset;
 };
 
 struct Event {
-	int type;
-	float startTime;
-	float endTime;
+   int type;
+   float startTime;
+   float endTime;
 
-	union U {
-		struct T0MovementInfo {
-			int unk1;
-			int unk2;
-			int unk3;
-			int unk4;
-		} t0MovementInfo;
+   union U {
+      struct T0MovementInfo {
+         int unk1;
+         int unk2;
+         int unk3;
+         int unk4;
+      } t0MovementInfo;
 
-		struct T1ParticleEffect {
-			int unk1;
-			int unk2;
-			int unk3;
-			int unk4;
-		} t1ParticleEffect;
+      struct T1ParticleEffect {
+         int unk1;
+         int unk2;
+         int unk3;
+         int unk4;
+      } t1ParticleEffect;
 
-		struct T16Unknown {
-			int unk1;
-			int unk2;
-			int unk3;
-			int unk4;
-			int unk5;
-		} t16Unknown;
+      struct T16Unknown {
+         int unk1;
+         int unk2;
+         int unk3;
+         int unk4;
+         int unk5;
+      } t16Unknown;
 
-		struct T96Unknown {
-			int unk1;
-			int unk2;
-			int unk3;
-			int unk4;
-		} t96Unknown;
+      struct T96Unknown {
+         int unk1;
+         int unk2;
+         int unk3;
+         int unk4;
+      } t96Unknown;
 
-		struct T108Unknown {
-			int unk1;
-			int unk2;
-			int unk3;
-			int unk4;
-		} t108Unknown;
+      struct T108Unknown {
+         int unk1;
+         int unk2;
+         int unk3;
+         int unk4;
+      } t108Unknown;
 
-		struct T128Unknown {
-			int unk1;
-			int unk2;
-			int unk3;
-		} t128Unknown;
+      struct T128Unknown {
+         int unk1;
+         int unk2;
+         int unk3;
+      } t128Unknown;
 
-		struct T129SoundEffect {
-			int unk1;
-			int unk2;
-			int unk3;
-			int unk4;
-			int unk5;
-		} t129SoundEffect;
+      struct T129SoundEffect {
+         int unk1;
+         int unk2;
+         int unk3;
+         int unk4;
+         int unk5;
+      } t129SoundEffect;
 
-		struct T144Unknown {
-			int unk1;
-			int unk2;
-			int unk3;
-			int unk4;
-		} t144Unknown;
+      struct T144Unknown {
+         int unk1;
+         int unk2;
+         int unk3;
+         int unk4;
+      } t144Unknown;
 
-		struct T224HitboxInfo {
-			int unk1;
-			int unk2;
-		} t224HitboxInfo;
+      struct T224HitboxInfo {
+         int unk1;
+         int unk2;
+      } t224HitboxInfo;
 
-		struct T303Unknown {
-			int unk1;
-			int unk2;
-		} t303Unknown;
-	} u;
+      struct T303Unknown {
+         int unk1;
+         int unk2;
+      } t303Unknown;
+   } u;
 
-	bool shouldScaleDuration;
-	int offsets[3];
+   bool shouldScaleDuration;
+   int offsets[3];
 };
 
 struct AnimFile {
-	int type;
-	std::wstring name;
+   int type;
+   std::wstring name;
 
-	union U{
-		struct AnimFileType0 {
-			int dataOffset;
-			int nameOffset;
-			int unk1;
-			int unk2;
-			int null;
-		} animFileType0;
+   union U{
+      struct AnimFileType0 {
+         int dataOffset;
+         int nameOffset;
+         int unk1;
+         int unk2;
+         int null;
+      } animFileType0;
 
-		struct AnimFileType1 {
-			int dataOffset;
-			int nextFileOffset;
-			int linkedAnimId;
-			int null1;
-			int null2;
-			int null3;
-		} animFileType1;
-	} u;
+      struct AnimFileType1 {
+         int dataOffset;
+         int nextFileOffset;
+         int linkedAnimId;
+         int null1;
+         int null2;
+         int null3;
+      } animFileType1;
+   } u;
 };
 
 struct AnimData {
-	struct Header{
-		int eventCount;
-		int eventOffset;
-		int unk1;
-		int unk2;
-		int unk3;
-		int someEventOffset;
-		int animFileOffset;
-	} header;
+   struct Header{
+      int eventCount;
+      int eventOffset;
+      int unk1;
+      int unk2;
+      int unk3;
+      int someEventOffset;
+      int animFileOffset;
+   } header;
 
-	std::vector<Event> events;
-	AnimFile animFile;
+   std::vector<Event> events;
+   AnimFile animFile;
 };
 
 struct TaeFile {
-	struct Header {
-		char signature[4];
-		int unk1;
-		int unk2;
-		int fileSize;
-		int unk3[16];
+   struct Header {
+      char signature[4];
+      int unk1;
+      int unk2;
+      int fileSize;
+      int unk3[16];
       int unk4;
-		int animIdCount;
-		int animIdsOffset;
-		int animGroupsOffset;
+      int animIdCount;
+      int animIdsOffset;
+      int animGroupsOffset;
       int unk5;
-		int animDataCount;
-		int animDataOffset;
-		int unk6[10];
-		int fileNamesOffset;
-	} header;
+      int animDataCount;
+      int animDataOffset;
+      int unk6[10];
+      int fileNamesOffset;
+   } header;
 
-	std::wstring skeletonHkxName;
-	std::wstring sibName;
+   std::wstring skeletonHkxName;
+   std::wstring sibName;
 
-	std::vector<AnimId> animIds;
-	std::vector<AnimGroup> animGroups;
-	std::vector<AnimData> animData;
+   std::vector<AnimId> animIds;
+   std::vector<AnimGroup> animGroups;
+   std::vector<AnimData> animData;
 };
 
 TaeFile* readTaeFile(FILE* file);
