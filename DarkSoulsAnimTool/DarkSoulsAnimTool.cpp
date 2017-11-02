@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 
 #include "structs.hpp"
 
@@ -255,73 +255,108 @@ void scaleHkxAnimationDuration(std::string sourceXmlPath, std::string outputXmlP
 */
 
 void checkEmpty(std::queue<std::wstring>& words) {
-   if (words.empty()) {
-      printf("Not enough args\n");
-      exit(1);
-   }
+    if (words.empty()) {
+        printf("Usage: DarkSoulsAnimTool {<Command>} [arg1 [arg2 [...] ] ]\n");
+        printf("Commands:");
+        printf("\n    scaleanim");
+        printf("\n    exporttae");
+        printf("\n\n");
+        printf("For more info about a specific command, do DarkSoulsAnimTool help {<Command>}\n");
+        exit(1);
+    }
+}
+
+void printCommandHelp(std::wstring commandName) {
+    std::wcout << std::endl;
+    std::wcout << commandName + L":" << std::endl;
+    std::wstring description = L"<No description>";
+    std::queue<std::wstring> args;
+
+    if (commandName == L"scaleanim") {
+        description = L"Scales an animation by the multiplier specified.";
+        args.push(L"TaeFilePath");
+        args.push(L"AnimFilePath");
+        args.push(L"Scale");
+    }else if (commandName == L"exporttae") {
+        description = L"Exports a TAE file in Json format.";
+        args.push(L"TaeFilePath");
+    }
+
+    std::wcout << L"    " + description << std::endl;
+    std::wcout << L"    Usage: DarkSoulsAnimTool " + commandName + L" ";
+    while (!args.empty()) {
+        std::wcout << L"<" + args.front() + L"> ";
+        args.pop();
+    }
+    std::wcout << std::endl;
+    exit(1);
 }
 
 std::wstring popString(std::queue<std::wstring>& words) {
-   checkEmpty(words);
+    checkEmpty(words);
 
-   std::wstring result = words.front();
-   words.pop();
-   return result;
+    std::wstring result = words.front();
+    words.pop();
+    return result;
+}
+
+std::wstring popStringLower(std::queue<std::wstring>& words) {
+    std::wstring str = popString(words);
+    std::transform(str.begin(), str.end(), str.begin(), towlower);
+    return str;
 }
 
 float popFloat(std::queue<std::wstring>& words) {
-   checkEmpty(words);
+    checkEmpty(words);
 
-   float result = (float)_wtof(words.front().c_str());
-   words.pop();
-   return result;
+    float result = (float)_wtof(words.front().c_str());
+    words.pop();
+    return result;
 }
 
 int wmain(int argCount, const wchar_t** args)
 {
-   //hkMemoryRouter* memoryRouter = hkMemoryInitUtil::initDefault(hkMallocAllocator::m_defaultMallocAllocator, hkMemorySystem::FrameInfo(1024 * 1024));
-   //hkBaseSystem::init(memoryRouter, havokErrorReport);
+    //hkMemoryRouter* memoryRouter = hkMemoryInitUtil::initDefault(hkMallocAllocator::m_defaultMallocAllocator, hkMemorySystem::FrameInfo(1024 * 1024));
+    //hkBaseSystem::init(memoryRouter, havokErrorReport);
 
-   //std::string sourceXmlPath = "C:/Projects/Dark Souls/Anim research/a00_3004.orig.hkx.xml";
-   //std::string outputXmlPath = "C:/Projects/Dark Souls/Anim research/output.hkx.xml";
-   // scaleHkxAnimationDuration(sourceXmlPath, outputXmlPath, 0.25f);
+    //std::string sourceXmlPath = "C:/Projects/Dark Souls/Anim research/a00_3004.orig.hkx.xml";
+    //std::string outputXmlPath = "C:/Projects/Dark Souls/Anim research/output.hkx.xml";
+    // scaleHkxAnimationDuration(sourceXmlPath, outputXmlPath, 0.25f);
 
-   // std::string sourceTaePath = "C:/Projects/Dark Souls/Anim research/c5260.orig.tae";
-   // std::string outputTaePath = "C:/Projects/Dark Souls/Anim research/output.tae";
+    // std::string sourceTaePath = "C:/Projects/Dark Souls/Anim research/c5260.orig.tae";
+    // std::string outputTaePath = "C:/Projects/Dark Souls/Anim research/output.tae";
 
 
-   std::queue<std::wstring> words;
-   for (int n = 1; n < argCount; ++n) {
-      words.push(args[n]);
-   }
+    std::queue<std::wstring> words;
+    for (int n = 1; n < argCount; ++n) {
+        words.push(args[n]);
+    }
 
-   checkEmpty(words);
+    checkEmpty(words);
 
-   std::wstring command = popString(words);
-   std::transform(command.begin(), command.end(), command.begin(), towlower);
+    std::wstring command = popStringLower(words);
 
-   for (int n = 0; n < argCount; ++n) {
-      if (command == L"scaleanim") {
-         /*scaleAnim(
-            popString(words),
-            popString(words),
-            popFloat(words)
-         );*/
-         // C++ provides no guarantee that the two popStrings will be evaluated before the
-         // popFloat, it's undefined. I hate this language so much.
+    if (command == L"help") {
+        std::wstring helpCmdName = popStringLower(words);
+        printCommandHelp(helpCmdName);
+    }
+    else if (command == L"scaleanim") {
+        //loosepolygon stop bitching about c++ ( ͡° ͜ʖ ͡°)
 
-         std::wstring s1 = popString(words);
-         std::wstring s2 = popString(words);
-         float f1 = popFloat(words);
-         scaleAnim(s1, s2, f1);
-      }else if (command == L"exporttae") {
-         std::wstring s1 = popString(words);
-         exportTae(s1);
-      }
-   }
+        std::wstring sourceTaePath = popString(words);
+        std::wstring animFileName = popString(words);
+        float scale = popFloat(words);
 
-   int unused;
-   std::cin >> unused;
+        scaleAnim(sourceTaePath, animFileName, scale);
+    }
+    else if (command == L"exporttae") {
+        std::wstring sourceTaePath = popString(words);
+
+        exportTae(sourceTaePath);
+    }
+
+    int unused;
+    std::cin >> unused;
 
     return 0;
 }

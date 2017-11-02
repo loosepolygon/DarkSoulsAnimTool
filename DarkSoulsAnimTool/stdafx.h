@@ -87,9 +87,9 @@
 
 
 // We are using serialization, so we need ReflectedClasses.
-// The objects are being saved and then loaded immediately so we know the version of the saved data is the same 
+// The objects are being saved and then loaded immediately so we know the version of the saved data is the same
 // as the version the application is linked with. Because of this we don't need RegisterVersionPatches or SerializeDeprecatedPre700.
-// If the demo was reading content saved from a previous version of the Havok content tools (common in real world Applications) 
+// If the demo was reading content saved from a previous version of the Havok content tools (common in real world Applications)
 // RegisterVersionPatches and perhaps SerializeDeprecatedPre700 are needed.
 
 //#define HK_EXCLUDE_FEATURE_SerializeDeprecatedPre700
