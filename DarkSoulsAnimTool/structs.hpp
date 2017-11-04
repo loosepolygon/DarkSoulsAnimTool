@@ -27,14 +27,14 @@ struct Event {
          int unk2;
          int unk3;
          int unk4;
-      } t0MovementInfo;
+      } t0;
 
       struct T1ParticleEffect {
          int unk1;
          int unk2;
          int unk3;
          int unk4;
-      } t1ParticleEffect;
+      } t1;
 
       struct T16Unknown {
          int unk1;
@@ -42,27 +42,27 @@ struct Event {
          int unk3;
          int unk4;
          int unk5;
-      } t16Unknown;
+      } t16;
 
       struct T96Unknown {
          int unk1;
          int unk2;
          int unk3;
          int unk4;
-      } t96Unknown;
+      } t96;
 
       struct T108Unknown {
          int unk1;
          int unk2;
          int unk3;
          int unk4;
-      } t108Unknown;
+      } t108;
 
       struct T128Unknown {
          int unk1;
          int unk2;
          int unk3;
-      } t128Unknown;
+      } t128;
 
       struct T129SoundEffect {
          int unk1;
@@ -70,24 +70,24 @@ struct Event {
          int unk3;
          int unk4;
          int unk5;
-      } t129SoundEffect;
+      } t129;
 
       struct T144Unknown {
          int unk1;
          int unk2;
          int unk3;
          int unk4;
-      } t144Unknown;
+      } t144;
 
       struct T224HitboxInfo {
          int unk1;
          int unk2;
-      } t224HitboxInfo;
+      } t224;
 
       struct T303Unknown {
          int unk1;
          int unk2;
-      } t303Unknown;
+      } t303;
    } u;
 
    bool shouldScaleDuration;

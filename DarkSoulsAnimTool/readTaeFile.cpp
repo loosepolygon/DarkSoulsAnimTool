@@ -87,8 +87,6 @@ TaeFile* readTaeFile(FILE* file) {
             fseek(file, event.offsets[2], SEEK_SET);
             fread(&event.type, sizeof(int), 1, file);
 
-            event.shouldScaleDuration = true;
-
             int eventSize;
             switch (event.type){
             case 0: eventSize = 20; break;
@@ -101,7 +99,7 @@ TaeFile* readTaeFile(FILE* file) {
             case 108: eventSize = 20; break;
             case 112: eventSize = 16; break;
             case 128: eventSize = 16; break;
-            case 129: eventSize = 24; event.shouldScaleDuration = false; break;
+            case 129: eventSize = 24; break;
             case 144: eventSize = 20; break;
             case 193: eventSize = 16; break;
             case 224: eventSize = 12; break;
@@ -115,6 +113,12 @@ TaeFile* readTaeFile(FILE* file) {
 
                // throw new std::exception();
                goto end;
+            }
+
+            event.shouldScaleDuration = true;
+            // Don't scale sounds, it cuts off the sound early and sounds awful
+            if (event.type == 129) {
+               event.shouldScaleDuration = false;
             }
 
             // Subtract size of type, already read.
@@ -142,7 +146,7 @@ end:;
          fread(&animFile.u.animFileType1, sizeof(AnimFile::U::AnimFileType1), 1, file);
       }
       else {
-         printf("Unknown type: %n\n", animFile.type);
+         printf("Unknown type: %d\n", animFile.type);
          throw new std::exception();
       }
       animData.animFile = animFile;
