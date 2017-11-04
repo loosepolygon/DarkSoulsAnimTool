@@ -1,8 +1,9 @@
-#pragma once
+#include "stdafx.h"
+
+#include "funcs.hpp"
 
 #include "UTF8-CPP\checked.h"
 
-#include <string>
 #include <algorithm>
 
 std::string utf16ToUtf8(std::wstring inputText) {

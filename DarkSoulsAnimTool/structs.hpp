@@ -158,13 +158,3 @@ struct TaeFile {
    std::vector<AnimGroup> animGroups;
    std::vector<AnimData> animData;
 };
-
-TaeFile* readTaeFile(FILE* file);
-
-void scaleAnim(
-   std::wstring sourceTaePath,
-   std::wstring animFileName,
-   float scale
-);
-
-void exportTae(std::wstring sourceTaePath);

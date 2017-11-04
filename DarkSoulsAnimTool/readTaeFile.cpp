@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "structs.hpp"
+#include "funcs.hpp"
 
 #include <string>
 #include <cstdio>
@@ -36,9 +37,24 @@ std::wstring readNameW(FILE* file) {
    return readNameW(file, offset);
 }
 
+TaeFile* readTaeFile(std::wstring sourceTaePath) {
+   FILE* file = _wfopen(sourceTaePath.c_str(), L"rb");
+   if (file == NULL) {
+      wprintf_s(L"Cannot open file: %s\n", sourceTaePath.c_str());
+      return nullptr;
+   }
+
+   TaeFile* taeFile = readTaeFile(file);
+
+   fclose(file);
+
+   return taeFile;
+}
+
 // Special thanks to Nyxojaele's 010 templates for making this easy for me.
 TaeFile* readTaeFile(FILE* file) {
    TaeFile* taeFile = new TaeFile;
+
    fread(&taeFile->header, 1, sizeof(TaeFile::Header), file);
 
    taeFile->skeletonHkxName = readNameW(file);

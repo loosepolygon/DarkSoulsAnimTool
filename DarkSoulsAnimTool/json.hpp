@@ -418,9 +418,7 @@ class JSON
         Class Type = Class::Null;
 };
 
-JSON Array() {
-    return std::move( JSON::Make( JSON::Class::Array ) );
-}
+JSON Array();
 
 template <typename... T>
 JSON Array( T... args ) {
@@ -429,14 +427,9 @@ JSON Array( T... args ) {
     return std::move( arr );
 }
 
-JSON Object() {
-    return std::move( JSON::Make( JSON::Class::Object ) );
-}
+JSON Object();
 
-std::ostream& operator<<( std::ostream &os, const JSON &json ) {
-    os << json.dump();
-    return os;
-}
+std::ostream& operator<<(std::ostream &os, const JSON &json);
 
 namespace {
     JSON parse_next( const string &, size_t & );
@@ -639,11 +632,6 @@ namespace {
         std::cerr << "ERROR: Parse: Unknown starting character '" << value << "'\n";
         return JSON();
     }
-}
-
-JSON JSON::Load( const string &str ) {
-    size_t offset = 0;
-    return std::move( parse_next( str, offset ) );
 }
 
 } // End Namespace json
