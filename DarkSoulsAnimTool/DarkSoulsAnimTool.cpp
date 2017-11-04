@@ -270,6 +270,14 @@ std::wstring popString(std::queue<std::wstring>& words) {
    return result;
 }
 
+std::wstring popOptionalString(std::queue<std::wstring>& words, const std::wstring& default) {
+   if (words.empty()) {
+      return default;
+   }else{
+      return popString(words);
+   }
+}
+
 float popFloat(std::queue<std::wstring>& words) {
    checkEmpty(words);
 
@@ -311,15 +319,16 @@ int wmain(int argCount, const wchar_t** args)
          // C++ provides no guarantee that the two popStrings will be evaluated before the
          // popFloat, it's undefined. I hate this language so much.
 
-         std::wstring s1 = popString(words);
-         std::wstring s2 = popString(words);
+         auto s1 = popString(words);
+         auto s2 = popString(words);
          float f1 = popFloat(words);
          scaleAnim(s1, s2, f1);
 
          break;
       }else if (command == L"exporttae") {
-         std::wstring s1 = popString(words);
-         exportTae(s1);
+         auto s1 = popString(words);
+         auto s2 = popOptionalString(words, L".");
+         exportTae(s1, s2);
 
          break;
       }

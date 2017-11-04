@@ -101,14 +101,28 @@ void scaleAnim(
    fclose(file);
 }
 
-void exportTae(std::wstring sourceTaePath) {
+void exportTae(std::wstring sourceTaePath, std::wstring outputDir) {
    TaeFile* taeFile = readTaeFile(sourceTaePath);
    json::JSON root = taeToJson(taeFile);
    std::string jsonText = root.dump();
 
-   std::wstring jsonOutputPath = sourceTaePath + L".json";
-   wprintf_s(L"Exporting %s to %s...\n", sourceTaePath.c_str(), jsonOutputPath.c_str());
-   FILE* file = _wfopen(jsonOutputPath.c_str(), L"wb");
+   std::wstring outputFileName = sourceTaePath;
+   for (int n = sourceTaePath.size(); n -- > 0;) {
+      if (sourceTaePath[n] == L'/' || sourceTaePath[n] == L'\\') {
+         outputFileName = &sourceTaePath[n + 1];
+         break;
+      }
+   }
+   outputFileName += L".json";
+
+   std::wstring outputPath = outputDir + L'\\' + outputFileName;
+   wprintf_s(L"Exporting %s to %s...\n", sourceTaePath.c_str(), outputPath.c_str());
+   FILE* file = _wfopen(outputPath.c_str(), L"wb");
+
+   if (file == NULL) {
+      wprintf_s(L"Cannot open file for writing: %s\n", outputPath.c_str());
+      return;
+   }
 
    fwrite(jsonText.c_str(), 1, jsonText.size(), file);
 

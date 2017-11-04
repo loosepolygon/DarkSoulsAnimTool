@@ -25,7 +25,7 @@ void scaleAnim(
    float scale
 );
 
-void exportTae(std::wstring sourceTaePath);
+void exportTae(std::wstring sourceTaePath, std::wstring outputDir);
 
 // utility.cpp
 
