@@ -315,14 +315,18 @@ int wmain(int argCount, const wchar_t** args)
          std::wstring s2 = popString(words);
          float f1 = popFloat(words);
          scaleAnim(s1, s2, f1);
+
+         break;
       }else if (command == L"exporttae") {
          std::wstring s1 = popString(words);
          exportTae(s1);
+
+         break;
       }
    }
 
    int unused;
    std::cin >> unused;
 
-    return 0;
+   return 0;
 }

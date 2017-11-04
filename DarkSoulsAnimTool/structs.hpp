@@ -90,8 +90,10 @@ struct Event {
       } t303;
    } u;
 
-   bool shouldScaleDuration;
    int offsets[3];
+
+   int size;
+   bool shouldScaleDuration;
 };
 
 struct AnimFile {

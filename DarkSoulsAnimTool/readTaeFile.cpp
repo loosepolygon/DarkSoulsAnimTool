@@ -131,6 +131,8 @@ TaeFile* readTaeFile(FILE* file) {
                goto end;
             }
 
+            event.size = eventSize;
+
             event.shouldScaleDuration = true;
             // Don't scale sounds, it cuts off the sound early and sounds awful
             if (event.type == 129) {
