@@ -255,9 +255,16 @@ void scaleHkxAnimationDuration(std::string sourceXmlPath, std::string outputXmlP
 }
 */
 
+const char usageString[] =
+   "Commands: \n"
+   "* scaleAnim taePath animFileName scale \n"
+   "* exportTae taePath [outputDir] \n"
+;
+
 void checkEmpty(std::queue<std::wstring>& words) {
    if (words.empty()) {
       printf("Not enough args\n");
+      printf("\n%s\n", usageString);
       exit(1);
    }
 }
