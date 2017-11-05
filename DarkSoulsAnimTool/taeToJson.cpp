@@ -35,11 +35,11 @@ json::JSON eventToJson(Event event) {
       "endTime", event.endTime,
    };
 
-   for (int n = 0; n < event.size / 4; ++n) {
+   int varCount = event.size / 4 - 1;
+   for (int n = 0; n < varCount; ++n) {
       char unkKey[16];
-      if (event.size / 4 > 10) {
+      if (varCount > 10) {
          snprintf(unkKey, sizeof(unkKey), "unk%02d", n + 1);
-
       }else{
          snprintf(unkKey, sizeof(unkKey), "unk%d", n + 1);
       }
