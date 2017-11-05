@@ -119,10 +119,12 @@ TaeFile* readTaeFile(FILE* file) {
             case 66: eventSize = 12; break;
             case 67: eventSize = 12; break;
             case 96: eventSize = 20; break;
+            case 99: eventSize = 20; break;
             case 100: eventSize = 40; break;
             case 101: eventSize = 12; break;
             case 104: eventSize = 20; break;
             case 108: eventSize = 20; break;
+            case 109: eventSize = 20; break;
             case 110: eventSize = 12; break;
             case 112: eventSize = 16; break;
             case 114: eventSize = 20; break;
@@ -141,18 +143,22 @@ TaeFile* readTaeFile(FILE* file) {
             case 224: eventSize = 12; break;
             case 225: eventSize = 12; break;
             case 226: eventSize = 12; break;
+            case 228: eventSize = 124; break;
             case 229: eventSize = 12; break;
             case 231: eventSize = 12; break;
             case 232: eventSize = 12; break;
+            case 233: eventSize = 376; break;
             case 236: eventSize = 20; break;
             case 300: eventSize = 24; break;
             case 301: eventSize = 12; break;
             case 302: eventSize = 12; break;
             case 303: eventSize = 12; break;
             case 304: eventSize = 16; break;
+            case 306: eventSize = 20; break;
             case 307: eventSize = 16; break;
             case 308: eventSize = 32; break;
             case 401: eventSize = 12; break;
+            case 500: eventSize = 12; break;
             default:
                printf("Unknown event type: %d \n", event.type);
 

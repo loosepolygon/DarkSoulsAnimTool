@@ -88,6 +88,14 @@ struct Event {
          int unk2;
       } t224;
 
+      struct T228Unknown{
+         int unk[31];
+      } t228;
+
+      struct T233Unknown {
+         int unk[94];
+      } t233;
+
       struct T303Unknown {
          int unk1;
          int unk2;
