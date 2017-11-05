@@ -37,7 +37,12 @@ json::JSON eventToJson(Event event) {
 
    for (int n = 0; n < event.size / 4; ++n) {
       char unkKey[16];
-      snprintf(unkKey, sizeof(unkKey), "unk%d", n + 1);
+      if (event.size / 4 > 10) {
+         snprintf(unkKey, sizeof(unkKey), "unk%02d", n + 1);
+
+      }else{
+         snprintf(unkKey, sizeof(unkKey), "unk%d", n + 1);
+      }
       result[unkKey] = getUnknown(reinterpret_cast<int*>(&event.u) + n);
    }
 
