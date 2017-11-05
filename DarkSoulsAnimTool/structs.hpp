@@ -18,7 +18,7 @@ struct AnimGroup {
 
 struct Event {
    int type;
-   float startTime;
+   float beginTime;
    float endTime;
 
    union U {

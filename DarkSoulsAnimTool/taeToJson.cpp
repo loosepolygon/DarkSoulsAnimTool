@@ -31,7 +31,7 @@ json::JSON getUnknownArray(int* source, int count) {
 json::JSON eventToJson(Event event) {
    json::JSON result = {
       "type", event.type,
-      "startTime", event.startTime,
+      "beginTime", event.beginTime,
       "endTime", event.endTime,
    };
 

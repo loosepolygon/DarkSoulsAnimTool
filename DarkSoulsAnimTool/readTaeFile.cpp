@@ -97,7 +97,7 @@ TaeFile* readTaeFile(FILE* file) {
          long posBuffer = ftell(file);
          {
             fseek(file, event.offsets[0], SEEK_SET);
-            fread(&event.startTime, sizeof(float), 1, file);
+            fread(&event.beginTime, sizeof(float), 1, file);
             fseek(file, event.offsets[1], SEEK_SET);
             fread(&event.endTime, sizeof(float), 1, file);
             fseek(file, event.offsets[2], SEEK_SET);
