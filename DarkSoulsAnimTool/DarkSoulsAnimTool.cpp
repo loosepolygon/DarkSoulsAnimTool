@@ -341,8 +341,8 @@ int wmain(int argCount, const wchar_t** args)
       }
    }
 
-   int unused;
-   std::cin >> unused;
+   //int unused;
+   //std::cin >> unused;
 
    return 0;
 }

@@ -36,6 +36,10 @@ struct Event {
          int unk4;
       } t1;
 
+      struct T1Unknown {
+         int unk[13];
+      } t8;
+
       struct T16Unknown {
          int unk1;
          int unk2;

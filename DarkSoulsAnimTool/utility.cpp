@@ -6,13 +6,26 @@
 
 #include <algorithm>
 
-std::string utf16ToUtf8(std::wstring inputText) {
-   std::string result;
+#define WIN32_LEAN_AND_MEAN
+#include "Windows.h"
 
-   utf8::utf16to8(
-      inputText.c_str(),
-      inputText.c_str() + inputText.length(),
-      std::back_inserter(result)
+std::string utf16ToUtf8(std::wstring inputText) {
+   int utf8Size = WideCharToMultiByte(
+      CP_UTF8,
+      0,
+      &inputText[0],
+      (int)inputText.size(),
+      NULL, 0, NULL, NULL
+   );
+   std::string result(utf8Size, 0);
+   WideCharToMultiByte(
+      CP_UTF8,
+      0,
+      &inputText[0],
+      (int)inputText.size(),
+      &result[0],
+      utf8Size,
+      NULL, NULL
    );
 
    return result;

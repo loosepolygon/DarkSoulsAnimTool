@@ -109,26 +109,67 @@ TaeFile* readTaeFile(FILE* file) {
             case 1: eventSize = 20; break;
             case 2: eventSize = 24; break;
             case 5: eventSize = 16; break;
+            case 8: eventSize = 56; break;
             case 16: eventSize = 24; break;
+            case 24: eventSize = 24; break;
+            case 32: eventSize = 12; break;
+            case 33: eventSize = 12; break;
+            case 64: eventSize = 16; break;
+            case 65: eventSize = 12; break;
             case 66: eventSize = 12; break;
+            case 67: eventSize = 12; break;
             case 96: eventSize = 20; break;
+            case 100: eventSize = 40; break;
+            case 101: eventSize = 12; break;
+            case 104: eventSize = 20; break;
             case 108: eventSize = 20; break;
+            case 110: eventSize = 12; break;
             case 112: eventSize = 16; break;
+            case 114: eventSize = 20; break;
+            case 115: eventSize = 20; break;
+            case 116: eventSize = 20; break;
+            case 118: eventSize = 20; break;
+            case 119: eventSize = 20; break;
+            case 120: eventSize = 32; break;
+            case 121: eventSize = 16; break;
             case 128: eventSize = 16; break;
             case 129: eventSize = 24; break;
+            case 130: eventSize = 24; break;
             case 144: eventSize = 20; break;
+            case 145: eventSize = 12; break;
             case 193: eventSize = 16; break;
             case 224: eventSize = 12; break;
+            case 225: eventSize = 12; break;
+            case 226: eventSize = 12; break;
+            case 229: eventSize = 12; break;
             case 231: eventSize = 12; break;
+            case 232: eventSize = 12; break;
+            case 236: eventSize = 20; break;
+            case 300: eventSize = 24; break;
+            case 301: eventSize = 12; break;
+            case 302: eventSize = 12; break;
             case 303: eventSize = 12; break;
             case 304: eventSize = 16; break;
+            case 307: eventSize = 16; break;
+            case 308: eventSize = 32; break;
+            case 401: eventSize = 12; break;
             default:
                printf("Unknown event type: %d \n", event.type);
 
                printf("Anim %d  Event: %d  offset: %x \n", n, e, event.offsets[2]);
 
-               // throw new std::exception();
-               goto end;
+               if (e < animHeader.eventCount - 1) {
+                  fseek(file, posBuffer, SEEK_SET);
+                  Event nextEvent;
+                  fread(nextEvent.offsets, sizeof(nextEvent.offsets), 1, file);
+
+                  int diff = nextEvent.offsets[2] - event.offsets[2];
+
+                  printf("Size guess: %d\n\n", diff);
+               }
+
+               throw new std::exception();
+               //goto end;
             }
 
             event.size = eventSize;
@@ -144,7 +185,7 @@ TaeFile* readTaeFile(FILE* file) {
             
             fread(&event.u, eventSize, 1, file);
 
-end:;
+//end:;
          }
          fseek(file, posBuffer, SEEK_SET);
 
