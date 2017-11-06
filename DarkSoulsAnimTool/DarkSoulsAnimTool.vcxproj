@@ -146,6 +146,7 @@
   <ItemGroup>
     <ClCompile Include="DarkSoulsAnimTool.cpp" />
     <ClCompile Include="json.cpp" />
+    <ClCompile Include="jsonToTae.cpp" />
     <ClCompile Include="readTaeFile.cpp" />
     <ClCompile Include="taeToJson.cpp" />
     <ClCompile Include="tools.cpp" />

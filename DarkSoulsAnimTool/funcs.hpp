@@ -9,24 +9,24 @@ namespace json {
 }
 
 // readTaeFile.cpp
-
 TaeFile* readTaeFile(std::wstring sourceTaePath);
 TaeFile* readTaeFile(FILE* file);
 
 // taeToJson.cpp
-
 json::JSON taeToJson(TaeFile* taeFile);
 
-// tools.cpp
+// taeToJson.cpp
+TaeFile* jsonToTae(json::JSON root);
 
+// tools.cpp
 void scaleAnim(
    std::wstring sourceTaePath,
    std::wstring animFileName,
    float scale
 );
-
-void exportTae(std::wstring sourceTaePath, std::wstring outputDir);
+void importTae(std::wstring sourceTaePath, std::wstring outputDir);
+void exportTae(std::wstring sourceJsonPath, std::wstring outputDir);
 
 // utility.cpp
-
+std::wstring utf8ToUtf16(std::string inputText);
 std::string utf16ToUtf8(std::wstring inputText);

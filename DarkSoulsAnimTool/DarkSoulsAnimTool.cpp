@@ -256,13 +256,17 @@ void scaleHkxAnimationDuration(std::string sourceXmlPath, std::string outputXmlP
 const char usageString[] =
    "Commands: \n"
    "* scaleAnim taePath animFileName scale \n"
-   "* exportTae taePath [outputDir] \n"
+   "* importTae taePath [outputDir] \n"
 ;
+
+void printUsage() {
+   printf("\n%s\n", usageString);
+}
 
 void checkEmpty(std::queue<std::wstring>& words) {
    if (words.empty()) {
       printf("Not enough args\n");
-      printf("\n%s\n", usageString);
+      printUsage();
       exit(1);
    }
 }
@@ -330,10 +334,20 @@ int wmain(int argCount, const wchar_t** args)
          scaleAnim(s1, s2, f1);
 
          break;
+      }else if (command == L"importtae") {
+         auto s1 = popString(words);
+         auto s2 = popOptionalString(words, L".");
+         importTae(s1, s2);
+
+         break;
       }else if (command == L"exporttae") {
          auto s1 = popString(words);
          auto s2 = popOptionalString(words, L".");
          exportTae(s1, s2);
+
+         break;
+      }else {
+         printUsage();
 
          break;
       }

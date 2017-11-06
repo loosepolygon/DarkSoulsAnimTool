@@ -99,7 +99,7 @@ void scaleAnim(
    fclose(file);
 }
 
-void exportTae(std::wstring sourceTaePath, std::wstring outputDir) {
+void importTae(std::wstring sourceTaePath, std::wstring outputDir) {
    TaeFile* taeFile = readTaeFile(sourceTaePath);
    json::JSON root = taeToJson(taeFile);
    std::string jsonText = root.dump();
@@ -114,7 +114,7 @@ void exportTae(std::wstring sourceTaePath, std::wstring outputDir) {
    outputFileName += L".json";
 
    std::wstring outputPath = outputDir + L'\\' + outputFileName;
-   wprintf_s(L"Exporting %s to %s...\n", sourceTaePath.c_str(), outputPath.c_str());
+   wprintf_s(L"Importing %s as %s...\n", sourceTaePath.c_str(), outputPath.c_str());
    FILE* file = _wfopen(outputPath.c_str(), L"wb");
 
    if (file == NULL) {
@@ -125,4 +125,27 @@ void exportTae(std::wstring sourceTaePath, std::wstring outputDir) {
    fwrite(jsonText.c_str(), 1, jsonText.size(), file);
 
    fclose(file);
+}
+
+void exportTae(std::wstring sourceJsonPath, std::wstring outputDir) {
+   FILE* file = _wfopen(sourceJsonPath.c_str(), L"rb");
+   if (file == NULL) {
+      wprintf_s(L"Cannot open file: %s\n", sourceJsonPath.c_str());
+      return;
+   }
+
+   fseek(file, 0, SEEK_END);
+   long fileSize = ftell(file);
+   fseek(file, 0, SEEK_SET);
+
+   std::string jsonText;
+   jsonText.resize(fileSize);
+   fread((void*)jsonText.data(), 1, fileSize, file);
+   fclose(file);
+
+   json::JSON root = json::JSON::Load(jsonText);
+
+   TaeFile* taeFile = jsonToTae(root);
+
+   // TODO: write to file
 }
