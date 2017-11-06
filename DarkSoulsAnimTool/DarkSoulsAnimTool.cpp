@@ -1,5 +1,3 @@
-#include "stdafx.h"
-
 #include "structs.hpp"
 #include "funcs.hpp"
 

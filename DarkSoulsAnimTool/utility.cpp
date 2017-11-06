@@ -1,5 +1,3 @@
-#include "stdafx.h"
-
 #include "funcs.hpp"
 
 #include "UTF8-CPP\checked.h"
