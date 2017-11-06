@@ -36,38 +36,6 @@ struct Event {
          int unk4;
       } t1;
 
-      struct T1Unknown {
-         int unk[13];
-      } t8;
-
-      struct T16Unknown {
-         int unk1;
-         int unk2;
-         int unk3;
-         int unk4;
-         int unk5;
-      } t16;
-
-      struct T96Unknown {
-         int unk1;
-         int unk2;
-         int unk3;
-         int unk4;
-      } t96;
-
-      struct T108Unknown {
-         int unk1;
-         int unk2;
-         int unk3;
-         int unk4;
-      } t108;
-
-      struct T128Unknown {
-         int unk1;
-         int unk2;
-         int unk3;
-      } t128;
-
       struct T129SoundEffect {
          int unk1;
          int unk2;
@@ -76,30 +44,14 @@ struct Event {
          int unk5;
       } t129;
 
-      struct T144Unknown {
-         int unk1;
-         int unk2;
-         int unk3;
-         int unk4;
-      } t144;
-
       struct T224HitboxInfo {
          int unk1;
          int unk2;
       } t224;
 
-      struct T228Unknown{
-         int unk[30];
-      } t228;
-
       struct T233Unknown {
          int unk[93];
       } t233;
-
-      struct T303Unknown {
-         int unk1;
-         int unk2;
-      } t303;
    } u;
 
    int offsets[3];
