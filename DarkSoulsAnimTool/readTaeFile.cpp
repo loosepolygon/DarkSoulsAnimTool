@@ -51,7 +51,7 @@ TaeFile* readTaeFile(std::wstring sourceTaePath) {
 
 // Special thanks to Nyxojaele's 010 templates for making this easy for me.
 TaeFile* readTaeFile(FILE* file) {
-   TaeFile* taeFile = new TaeFile;
+   TaeFile* taeFile = new TaeFile{};
 
    fread(&taeFile->header, 1, sizeof(TaeFile::Header), file);
 

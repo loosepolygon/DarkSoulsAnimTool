@@ -26,6 +26,7 @@ json::JSON getUnknownArray(int* source, int count) {
    return result;
 }
 
+// Note: keys are sorted by alphabetical order
 json::JSON eventToJson(Event event) {
    json::JSON result = {
       "type", event.type,
@@ -105,9 +106,14 @@ json::JSON taeToJson(TaeFile* taeFile) {
          "name", utf16ToUtf8(animData.animFile.name),
       };
       if (animData.animFile.type == 0) {
-
+         animFile["unk1"] = animData.animFile.u.animFileType0.unk1;
+         animFile["unk2"] = animData.animFile.u.animFileType0.unk2;
+         animFile["unk3"] = animData.animFile.u.animFileType0.unk3;
       }else {
          animFile["linkedAnimId"] = animData.animFile.u.animFileType1.linkedAnimId;
+         animFile["unk1"] = animData.animFile.u.animFileType1.unk1;
+         animFile["unk2"] = animData.animFile.u.animFileType1.unk2;
+         animFile["unk3"] = animData.animFile.u.animFileType1.unk3;
       }
 
       json::JSON obj = {

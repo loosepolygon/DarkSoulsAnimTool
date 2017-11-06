@@ -52,6 +52,9 @@ struct Event {
       struct T233Unknown {
          int unk[93];
       } t233;
+
+      // I might only use just this
+      int vars[93];
    } u;
 
    int offsets[3];
@@ -70,16 +73,16 @@ struct AnimFile {
          int nameOffset;
          int unk1;
          int unk2;
-         int null;
+         int unk3;
       } animFileType0;
 
       struct AnimFileType1 {
          int dataOffset;
          int nextFileOffset;
          int linkedAnimId;
-         int null1;
-         int null2;
-         int null3;
+         int unk1;
+         int unk2;
+         int unk3;
       } animFileType1;
    } u;
 };
