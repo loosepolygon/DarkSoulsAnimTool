@@ -80,11 +80,29 @@ TaeFile* readTaeFile(FILE* file) {
       AnimData& animData = taeFile->animData[n];
       AnimData::Header animHeader = animData.header;
 
-      if (animHeader.eventCount == 0) {
-         continue;
-      }
+      AnimFile animFile;
+      fseek(file, animHeader.animFileOffset, SEEK_SET);
+      fread(&animFile.type, sizeof(int), 1, file);
+      if (animFile.type == 0) {
+         fread(&animFile.u.animFileType0, sizeof(AnimFile::U::AnimFileType0), 1, file);
 
-      fseek(file, animHeader.eventOffset, SEEK_SET);
+         std::wstring name = readNameW(file, animFile.u.animFileType0.nameOffset);
+         animFile.name = name;
+      }
+      else if (animFile.type == 1) {
+         fread(&animFile.u.animFileType1, sizeof(AnimFile::U::AnimFileType1), 1, file);
+      }else {
+         printf("Unknown AnimFile type: %d\n", animFile.type);
+         throw new std::exception();
+      }
+      animData.animFile = animFile;
+
+      if (animHeader.eventCount == 0) {
+         std::wstring name = readNameW(file, ftell(file));
+         animData.animFile.name = name;
+      }else {
+         fseek(file, animHeader.eventOffset, SEEK_SET);
+      }
 
       animData.events = std::vector<Event>();
       for(int e = 0; e < animHeader.eventCount; ++e){
@@ -101,63 +119,8 @@ TaeFile* readTaeFile(FILE* file) {
             fseek(file, event.offsets[2], SEEK_SET);
             fread(&event.type, sizeof(int), 1, file);
 
-            int eventSize;
-            switch (event.type){
-            case 0: eventSize = 20; break;
-            case 1: eventSize = 20; break;
-            case 2: eventSize = 24; break;
-            case 5: eventSize = 16; break;
-            case 8: eventSize = 56; break;
-            case 16: eventSize = 24; break;
-            case 24: eventSize = 24; break;
-            case 32: eventSize = 12; break;
-            case 33: eventSize = 12; break;
-            case 64: eventSize = 16; break;
-            case 65: eventSize = 12; break;
-            case 66: eventSize = 12; break;
-            case 67: eventSize = 12; break;
-            case 96: eventSize = 20; break;
-            case 99: eventSize = 20; break;
-            case 100: eventSize = 40; break;
-            case 101: eventSize = 12; break;
-            case 104: eventSize = 20; break;
-            case 108: eventSize = 20; break;
-            case 109: eventSize = 20; break;
-            case 110: eventSize = 12; break;
-            case 112: eventSize = 16; break;
-            case 114: eventSize = 20; break;
-            case 115: eventSize = 20; break;
-            case 116: eventSize = 20; break;
-            case 118: eventSize = 20; break;
-            case 119: eventSize = 20; break;
-            case 120: eventSize = 32; break;
-            case 121: eventSize = 16; break;
-            case 128: eventSize = 16; break;
-            case 129: eventSize = 24; break;
-            case 130: eventSize = 24; break;
-            case 144: eventSize = 20; break;
-            case 145: eventSize = 12; break;
-            case 193: eventSize = 16; break;
-            case 224: eventSize = 12; break;
-            case 225: eventSize = 12; break;
-            case 226: eventSize = 12; break;
-            case 228: eventSize = 124; break;
-            case 229: eventSize = 12; break;
-            case 231: eventSize = 12; break;
-            case 232: eventSize = 12; break;
-            case 233: eventSize = 376; break;
-            case 236: eventSize = 20; break;
-            case 300: eventSize = 24; break;
-            case 301: eventSize = 12; break;
-            case 302: eventSize = 12; break;
-            case 303: eventSize = 12; break;
-            case 304: eventSize = 16; break;
-            case 306: eventSize = 20; break;
-            case 307: eventSize = 16; break;
-            case 308: eventSize = 32; break;
-            case 401: eventSize = 12; break;
-            case 500: eventSize = 12; break;
-            default:
+            int eventSize = getEventSize(event.type);
+            if(eventSize == -1){
                printf("Unknown event type: %d \n", event.type);
 
                printf("Anim %d  Event: %d  offset: %x \n", n, e, event.offsets[2]);
@@ -195,25 +158,68 @@ TaeFile* readTaeFile(FILE* file) {
 
          animData.events.push_back(event);
       }
-
-      AnimFile animFile;
-      fseek(file, animHeader.animFileOffset, SEEK_SET);
-      fread(&animFile.type, sizeof(int), 1, file);
-      if (animFile.type == 0) {
-         fread(&animFile.u.animFileType0, sizeof(AnimFile::U::AnimFileType0), 1, file);
-
-         std::wstring name = readNameW(file, animFile.u.animFileType0.nameOffset);
-         animFile.name = name;
-      }
-      else if (animFile.type == 1) {
-         fread(&animFile.u.animFileType1, sizeof(AnimFile::U::AnimFileType1), 1, file);
-      }
-      else {
-         printf("Unknown type: %d\n", animFile.type);
-         throw new std::exception();
-      }
-      animData.animFile = animFile;
    }
 
    return taeFile;
+}
+
+// Includes type and vars
+size_t getEventSize(int eventType) {
+   switch (eventType) {
+      case 0: return 20;
+      case 1: return 20;
+      case 2: return 24;
+      case 5: return 16;
+      case 8: return 56;
+      case 16: return 24;
+      case 24: return 24;
+      case 32: return 12;
+      case 33: return 12;
+      case 64: return 16;
+      case 65: return 12;
+      case 66: return 12;
+      case 67: return 12;
+      case 96: return 20;
+      case 99: return 20;
+      case 100: return 40;
+      case 101: return 12;
+      case 104: return 20;
+      case 108: return 20;
+      case 109: return 20;
+      case 110: return 12;
+      case 112: return 16;
+      case 114: return 20;
+      case 115: return 20;
+      case 116: return 20;
+      case 118: return 20;
+      case 119: return 20;
+      case 120: return 32;
+      case 121: return 16;
+      case 128: return 16;
+      case 129: return 24;
+      case 130: return 24;
+      case 144: return 20;
+      case 145: return 12;
+      case 193: return 16;
+      case 224: return 12;
+      case 225: return 12;
+      case 226: return 12;
+      case 228: return 20;
+      case 229: return 12;
+      case 231: return 12;
+      case 232: return 12;
+      case 233: return 16;
+      case 236: return 20;
+      case 300: return 24;
+      case 301: return 12;
+      case 302: return 12;
+      case 303: return 12;
+      case 304: return 16;
+      case 306: return 20;
+      case 307: return 16;
+      case 308: return 32;
+      case 401: return 12;
+      case 500: return 12;
+      default: return -1;
+   }
 }

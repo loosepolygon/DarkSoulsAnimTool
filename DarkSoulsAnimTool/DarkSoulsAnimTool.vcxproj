@@ -151,6 +151,7 @@
     <ClCompile Include="taeToJson.cpp" />
     <ClCompile Include="tools.cpp" />
     <ClCompile Include="utility.cpp" />
+    <ClCompile Include="writeTaeFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="funcs.hpp" />

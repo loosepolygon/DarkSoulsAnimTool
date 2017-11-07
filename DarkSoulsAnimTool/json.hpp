@@ -45,7 +45,7 @@ namespace {
 class JSON
 {
     union BackingData {
-        BackingData( double d ) : Float( d ){}
+        BackingData( float d ) : Float( d ){}
         BackingData( long   l ) : Int( l ){}
         BackingData( bool   b ) : Bool( b ){}
         BackingData( string s ) : String( new string( s ) ){}
@@ -54,7 +54,7 @@ class JSON
         deque<JSON>        *List;
         map<string,JSON>   *Map;
         string             *String;
-        double              Float;
+        float              Float;
         long                Int;
         bool                Bool;
     } Internal;
@@ -188,7 +188,7 @@ class JSON
         JSON( T i, typename enable_if<is_integral<T>::value && !is_same<T,bool>::value>::type* = 0 ) : Internal( (long)i ), Type( Class::Integral ){}
 
         template <typename T>
-        JSON( T f, typename enable_if<is_floating_point<T>::value>::type* = 0 ) : Internal( (double)f ), Type( Class::Floating ){}
+        JSON( T f, typename enable_if<is_floating_point<T>::value>::type* = 0 ) : Internal( (float)f ), Type( Class::Floating ){}
 
         template <typename T>
         JSON( T s, typename enable_if<is_convertible<T,string>::value>::type* = 0 ) : Internal( string( s ) ), Type( Class::String ){}
@@ -291,10 +291,10 @@ class JSON
             return ok ? std::move( json_escape( *Internal.String ) ): string("");
         }
 
-        double ToFloat() const { bool b; return ToFloat( b ); }
-        double ToFloat( bool &ok ) const {
+        float ToFloat() const { bool b; return ToFloat( b ); }
+        float ToFloat( bool &ok ) const {
             ok = (Type == Class::Floating);
-            return ok ? Internal.Float : 0.0;
+            return ok ? Internal.Float : 0.0f;
         }
 
         long ToInt() const { bool b; return ToInt( b ); }
@@ -366,7 +366,10 @@ class JSON
                 case Class::String:
                     return "\"" + json_escape( *Internal.String ) + "\"";
                 case Class::Floating:
-                    return std::to_string( Internal.Float );
+                    // return std::to_string( Internal.Float );
+                   char buffer[32];
+                   snprintf(buffer, 32, "%.10f", Internal.Float);
+                   return buffer;
                 case Class::Integral:
                     return std::to_string( Internal.Int );
                 case Class::Boolean:
@@ -581,10 +584,10 @@ namespace {
         --offset;
         
         if( isDouble )
-            Number = std::stod( val ) * std::pow( 10, exp );
+            Number = std::stof( val ) * std::powf( 10.0f, (float)exp );
         else {
             if( !exp_str.empty() )
-                Number = std::stol( val ) * std::pow( 10, exp );
+                Number = std::stol( val ) * std::powf( 10.0f, (float)exp );
             else
                 Number = std::stol( val );
         }

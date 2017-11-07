@@ -104,16 +104,7 @@ void importTae(std::wstring sourceTaePath, std::wstring outputDir) {
    json::JSON root = taeToJson(taeFile);
    std::string jsonText = root.dump();
 
-   std::wstring outputFileName = sourceTaePath;
-   for (int n = sourceTaePath.size(); n -- > 0;) {
-      if (sourceTaePath[n] == L'/' || sourceTaePath[n] == L'\\') {
-         outputFileName = &sourceTaePath[n + 1];
-         break;
-      }
-   }
-   outputFileName += L".json";
-
-   std::wstring outputPath = outputDir + L'\\' + outputFileName;
+   std::wstring outputPath = outputDir + L'\\' + getBaseFileName(sourceTaePath) + L".json";
    wprintf_s(L"Importing %s as %s...\n", sourceTaePath.c_str(), outputPath.c_str());
    FILE* file = _wfopen(outputPath.c_str(), L"wb");
 
@@ -128,24 +119,29 @@ void importTae(std::wstring sourceTaePath, std::wstring outputDir) {
 }
 
 void exportTae(std::wstring sourceJsonPath, std::wstring outputDir) {
-   FILE* file = _wfopen(sourceJsonPath.c_str(), L"rb");
-   if (file == NULL) {
-      wprintf_s(L"Cannot open file: %s\n", sourceJsonPath.c_str());
-      return;
+   std::string jsonText;
+   {
+      FILE* file = _wfopen(sourceJsonPath.c_str(), L"rb");
+      if (file == NULL) {
+         wprintf_s(L"Cannot open file: %s\n", sourceJsonPath.c_str());
+         return;
+      }
+
+      fseek(file, 0, SEEK_END);
+      long fileSize = ftell(file);
+      fseek(file, 0, SEEK_SET);
+
+      jsonText.resize(fileSize);
+      fread((void*)jsonText.data(), 1, fileSize, file);
+      fclose(file);
    }
 
-   fseek(file, 0, SEEK_END);
-   long fileSize = ftell(file);
-   fseek(file, 0, SEEK_SET);
-
-   std::string jsonText;
-   jsonText.resize(fileSize);
-   fread((void*)jsonText.data(), 1, fileSize, file);
-   fclose(file);
-
    json::JSON root = json::JSON::Load(jsonText);
-
    TaeFile* taeFile = jsonToTae(root);
 
-   // TODO: write to file
+   std::wstring fileName = getBaseFileName(sourceJsonPath);
+   stringReplace(fileName, L".json", L"");
+   stringReplace(fileName, L".tae", L"");
+   std::wstring outputPath = outputDir + L'\\' + fileName + L".tae";
+   writeTaeFile(outputPath, taeFile);
 }

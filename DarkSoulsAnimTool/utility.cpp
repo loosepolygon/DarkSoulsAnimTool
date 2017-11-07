@@ -7,6 +7,26 @@
 #define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
 
+std::wstring getBaseFileName(std::wstring path) {
+   std::wstring result = path;
+
+   for (int n = path.size(); n --> 0;) {
+      if (path[n] == L'/' || path[n] == L'\\') {
+         result = &path[n + 1];
+         break;
+      }
+   }
+
+   return result;
+}
+
+void stringReplace(std::wstring& text, const std::wstring& from, const std::wstring& to) {
+   size_t startPos = text.find(from);
+   if (startPos != std::wstring::npos) {
+      text.replace(startPos, from.size(), to);
+   }
+}
+
 std::wstring utf8ToUtf16(std::string inputText) {
    std::wstring result;
 

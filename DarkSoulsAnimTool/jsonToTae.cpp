@@ -9,6 +9,10 @@
 
 // For debugging unknowns that are written as "123 or 0.000"
 int getUnknown(json::JSON value) {
+   if (value.JSONType() == json::JSON::Class::Integral) {
+      return value.ToInt();
+   }
+
    std::string text = value.ToString();
    for (size_t n = 0; n < text.size(); ++n) {
       if (text[n] == ' ') {

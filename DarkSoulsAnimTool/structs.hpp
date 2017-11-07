@@ -54,7 +54,7 @@ struct Event {
       } t233;
 
       // I might only use just this
-      int vars[93];
+      int vars[56];
    } u;
 
    int offsets[3];
