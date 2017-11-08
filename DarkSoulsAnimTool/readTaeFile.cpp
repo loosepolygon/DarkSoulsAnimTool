@@ -12,15 +12,19 @@ std::wstring readNameW(FILE* file, int offset) {
    fseek(file, offset, SEEK_SET);
 
    std::wstring text;
-   while (feof(file) == 0) {
-      wchar_t c;
-      fread(&c, 1, sizeof(wchar_t), file);
+   int peekChar = fgetc(file);
+   ungetc(peekChar, file);
+   if (peekChar > 1) {
+      while (feof(file) == 0) {
+         wchar_t c;
+         fread(&c, 1, sizeof(wchar_t), file);
 
-      if (c == L'\0') {
-         break;
+         if (c == L'\0') {
+            break;
+         }
+
+         text += c;
       }
-
-      text += c;
    }
 
    fseek(file, posBuffer, SEEK_SET);
@@ -97,7 +101,7 @@ TaeFile* readTaeFile(FILE* file) {
       }
       animData.animFile = animFile;
 
-      if (animHeader.eventCount == 0) {
+      if (animFile.type == 1 && animHeader.eventCount == 0) {
          std::wstring name = readNameW(file, ftell(file));
          animData.animFile.name = name;
       }else {

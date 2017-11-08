@@ -43,13 +43,16 @@ void alignBytes(std::vector<byte>& bytes) {
 
 void appendNameW(std::vector<byte>& bytes, const std::wstring& name, int ref = -1) {
    size_t oldSize = bytes.size();
-   size_t addedSize = (name.size()) * 2;
-   bytes.resize(oldSize + addedSize);
-   memcpy(&bytes[oldSize], name.data(), addedSize);
-   
-   appendZeroes(bytes, 2);
 
-   alignBytes(bytes);
+   if (name.size() > 0) {
+      size_t addedSize = (name.size()) * 2;
+      bytes.resize(oldSize + addedSize);
+      memcpy(&bytes[oldSize], name.data(), addedSize);
+
+      appendZeroes(bytes, 2);
+
+      alignBytes(bytes);
+   }
 
    if (ref != -1) {
       memcpy(&bytes[ref], &oldSize, sizeof(int));
@@ -171,11 +174,9 @@ void writeTaeFile(std::wstring outputPath, TaeFile* taeFile) {
 
          if (animData.events.size() > 0) {
             animData.header.someEventOffset = bytes.size();
-         }else{
+         }else if(animFile.type == 1){
             // This is only for the end of some type1s or something
-            if (animFile.name.size() > 0) {
-               appendNameW(bytes, animFile.name);
-            }
+            appendNameW(bytes, animFile.name);
          }
 
          std::vector<float> timeFloats = getUniqueFloats(animData);
