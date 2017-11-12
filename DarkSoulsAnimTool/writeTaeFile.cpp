@@ -213,7 +213,7 @@ void writeTaeFile(std::wstring outputPath, TaeFile* taeFile) {
 
             appendData(bytes, &event.type);
             size_t eventSize = getEventSize(event.type);
-            appendData(bytes, event.u.vars, eventSize - 4);
+            appendData(bytes, event.vars, eventSize - 4);
          }
 
          // Update header

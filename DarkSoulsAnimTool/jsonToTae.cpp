@@ -49,7 +49,7 @@ Event jsonToEvent(json::JSON jsonEvent) {
       std::string jsonKey = it.first;
       json::JSON jsonValue = it.second;
 
-      void* dest = &event.u.vars[n];
+      void* dest = &event.vars[n];
 
       if (!knownEventInfo.IsNull()) {
          json::JSON varInfo = knownEventInfo[std::to_string(n)];

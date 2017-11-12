@@ -21,41 +21,7 @@ struct Event {
    float beginTime;
    float endTime;
 
-   union U {
-      struct T0MovementInfo {
-         int unk1;
-         int unk2;
-         int unk3;
-         int unk4;
-      } t0;
-
-      struct T1ParticleEffect {
-         int unk1;
-         int unk2;
-         int unk3;
-         int unk4;
-      } t1;
-
-      struct T129SoundEffect {
-         int unk1;
-         int unk2;
-         int unk3;
-         int unk4;
-         int unk5;
-      } t129;
-
-      struct T224HitboxInfo {
-         int unk1;
-         int unk2;
-      } t224;
-
-      struct T233Unknown {
-         int unk[93];
-      } t233;
-
-      // I might only use just this
-      int vars[56];
-   } u;
+   int vars[56 / 4];
 
    int offsets[3];
 

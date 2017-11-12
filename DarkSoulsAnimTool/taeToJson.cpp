@@ -58,7 +58,7 @@ json::JSON eventToJson(Event event) {
          if (!varInfo.IsNull()) {
             strcat(varKey, ("_" + varInfo["varName"].ToString()).c_str());
 
-            int* intValue = reinterpret_cast<int*>(&event.u) + n;
+            int* intValue = reinterpret_cast<int*>(&event.vars) + n;
             float* floatValue = (float*)intValue;
 
             std::string valueType = varInfo["valueType"].ToString();
@@ -71,10 +71,10 @@ json::JSON eventToJson(Event event) {
                throw new std::exception();
             }
          }else {
-            jsonVars[varKey] = getUnknown(reinterpret_cast<int*>(&event.u) + n);
+            jsonVars[varKey] = getUnknown(reinterpret_cast<int*>(&event.vars) + n);
          }
       }else {
-         jsonVars[varKey] = getUnknown(reinterpret_cast<int*>(&event.u) + n);
+         jsonVars[varKey] = getUnknown(reinterpret_cast<int*>(&event.vars) + n);
       }
    }
 

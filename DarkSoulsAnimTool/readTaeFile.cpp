@@ -154,7 +154,7 @@ TaeFile* readTaeFile(FILE* file) {
             // Subtract size of type, already read.
             eventSize -= sizeof(int);
             
-            fread(&event.u, eventSize, 1, file);
+            fread(&event.vars, eventSize, 1, file);
 
 //end:;
          }
