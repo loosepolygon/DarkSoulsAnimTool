@@ -1,6 +1,7 @@
 #include "structs.hpp"
 #include "funcs.hpp"
 #include "json.hpp"
+#include "knownEventTypes.hpp"
 
 #include <string>
 #include <cstdio>
@@ -39,21 +40,37 @@ Event jsonToEvent(json::JSON jsonEvent) {
    event.endTime = (float)jsonEvent["endTime"].ToFloat();
    event.type = jsonEvent["type"].ToInt();
 
-   int varCount = jsonEvent.size() - 3;
-   int readCount = -3;
+   static json::JSON knownEventTypes = json::JSON::Load(knownEventTypesText);
+   json::JSON knownEventInfo = knownEventTypes[std::to_string(event.type)];
+
+   int n = 0;
    // The object range is iterated alphabetically
-   for (auto it : jsonEvent.ObjectRange()) {
-      if (readCount >= varCount) {
-         break;
+   for (auto it : jsonEvent["vars"].ObjectRange()) {
+      std::string jsonKey = it.first;
+      json::JSON jsonValue = it.second;
+
+      void* dest = &event.u.vars[n];
+
+      if (!knownEventInfo.IsNull()) {
+         json::JSON varInfo = knownEventInfo[std::to_string(n)];
+         if (!varInfo.IsNull()) {
+            std::string valueType = varInfo["valueType"].ToString();
+            if (valueType == "int") {
+               *(int*)dest = jsonValue.ToInt();
+            }else if (valueType == "float") {
+               *(float*)dest = jsonValue.ToFloat();
+            }else {
+               printf("Bad known event info for %d\n", event.type);
+               throw new std::exception();
+            }
+         }else {
+            *(int*)dest = getUnknown(jsonValue);
+         }
+      }else {
+         *(int*)dest = getUnknown(jsonValue);
       }
 
-      if (readCount >= 0) {
-         std::string key = it.first;
-         json::JSON value = it.second;
-         event.u.vars[readCount] = getUnknown(value);
-      }
-
-      ++readCount;
+      ++n;
    }
 
    return event;

@@ -1,6 +1,7 @@
 #include "structs.hpp"
 #include "funcs.hpp"
 #include "json.hpp"
+#include "knownEventTypes.hpp"
 
 #include <string>
 #include <cstdio>
@@ -34,16 +35,50 @@ json::JSON eventToJson(Event event) {
       "endTime", event.endTime,
    };
 
-   int varCount = event.size / 4 - 1;
-   for (int n = 0; n < varCount; ++n) {
-      char unkKey[16];
-      if (varCount > 10) {
-         snprintf(unkKey, sizeof(unkKey), "unk%02d", n + 1);
-      }else{
-         snprintf(unkKey, sizeof(unkKey), "unk%d", n + 1);
-      }
-      result[unkKey] = getUnknown(reinterpret_cast<int*>(&event.u) + n);
+   static json::JSON knownEventTypes = json::JSON::Load(knownEventTypesText);
+   json::JSON knownEventInfo = knownEventTypes[std::to_string(event.type)];
+
+   if (!knownEventInfo.IsNull()) {
+      result["typeName"] = knownEventInfo["eventTypeName"].ToString();
    }
+
+   json::JSON jsonVars = json::Object();
+
+   int varCount = event.size / 4 - 1;
+   char varKey[64];
+   for (int n = 0; n < varCount; ++n) {
+      if (varCount > 10) {
+         snprintf(varKey, sizeof(varKey), "var%02d", n);
+      }else{
+         snprintf(varKey, sizeof(varKey), "var%d", n);
+      }
+
+      if (!knownEventInfo.IsNull()) {
+         json::JSON varInfo = knownEventInfo[std::to_string(n)];
+         if (!varInfo.IsNull()) {
+            strcat(varKey, ("_" + varInfo["varName"].ToString()).c_str());
+
+            int* intValue = reinterpret_cast<int*>(&event.u) + n;
+            float* floatValue = (float*)intValue;
+
+            std::string valueType = varInfo["valueType"].ToString();
+            if (valueType == "int") {
+               jsonVars[varKey] = *intValue;
+            }else if (valueType == "float") {
+               jsonVars[varKey] = *floatValue;
+            }else {
+               printf("Bad known event info for %d\n", event.type);
+               throw new std::exception();
+            }
+         }else {
+            jsonVars[varKey] = getUnknown(reinterpret_cast<int*>(&event.u) + n);
+         }
+      }else {
+         jsonVars[varKey] = getUnknown(reinterpret_cast<int*>(&event.u) + n);
+      }
+   }
+
+   result["vars"] = jsonVars;
 
    return result;
 }

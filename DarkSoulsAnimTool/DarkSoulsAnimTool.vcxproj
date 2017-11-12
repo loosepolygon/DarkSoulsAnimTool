@@ -157,6 +157,7 @@
     <ClInclude Include="funcs.hpp" />
     <ClInclude Include="json.hpp" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="knownEventTypes.hpp" />
     <ClInclude Include="structs.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
