@@ -125,11 +125,11 @@ json::JSON taeToJson(TaeFile* taeFile) {
       };
 
       // Sort events by their type number for easier analysis
-      //std::sort(
-      //   animData.events.begin(),
-      //   animData.events.end(),
-      //   [](const Event& e1, const Event& e2) -> bool {return e1.type < e2.type;}
-      //);
+      std::sort(
+         animData.events.begin(),
+         animData.events.end(),
+         [](const Event& e1, const Event& e2) -> bool {return e1.type < e2.type;}
+      );
 
       auto events = json::Array();
       for (Event event : animData.events) {
