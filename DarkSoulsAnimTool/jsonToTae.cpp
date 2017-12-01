@@ -45,7 +45,7 @@ Event jsonToEvent(json::JSON jsonEvent) {
 
    int n = 0;
    // The object range is iterated alphabetically
-   for (auto it : jsonEvent["params"].ObjectRange()) {
+   for (auto it : jsonEvent["vars"].ObjectRange()) {
       std::string jsonKey = it.first;
       json::JSON jsonValue = it.second;
 

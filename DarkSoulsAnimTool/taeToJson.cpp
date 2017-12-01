@@ -77,7 +77,7 @@ json::JSON eventToJson(Event event) {
       }
    }
 
-   result["params"] = jsonVars;
+   result["vars"] = jsonVars;
 
    return result;
 }
