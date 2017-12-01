@@ -3,10 +3,12 @@
 static const char * knownEventTypesText = R"--(
 
 {
-   "0"
+   "0": {
+      "eventTypeName": "ApplySpecialProperty"
+   },
    "224": {
-      "eventTypeName": "trackingSpeed",
-      "1": {
+      "eventTypeName": "TrackingSpeed",
+      "0": {
          "varName": "degrees",
          "valueType": "float"
       }
