@@ -212,8 +212,10 @@ void writeTaeFile(std::wstring outputPath, TaeFile* taeFile) {
             *typePointer = bytes.size();
 
             appendData(bytes, &event.type);
-            size_t eventSize = getEventSize(event.type);
-            appendData(bytes, event.vars, eventSize - 4);
+            int paramsOffset = bytes.size() + 4;
+            appendData(bytes, &paramsOffset);
+            int paramCount = getEventParamCount(event.type);
+            appendData(bytes, event.params, paramCount * sizeof(int));
          }
 
          // Update header

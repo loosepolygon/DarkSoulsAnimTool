@@ -45,11 +45,11 @@ Event jsonToEvent(json::JSON jsonEvent) {
 
    int n = 0;
    // The object range is iterated alphabetically
-   for (auto it : jsonEvent["vars"].ObjectRange()) {
+   for (auto it : jsonEvent["params"].ObjectRange()) {
       std::string jsonKey = it.first;
       json::JSON jsonValue = it.second;
 
-      void* dest = &event.vars[n];
+      void* dest = &event.params[n];
 
       if (!knownEventInfo.IsNull()) {
          json::JSON varInfo = knownEventInfo[std::to_string(n)];

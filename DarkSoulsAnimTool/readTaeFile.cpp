@@ -123,8 +123,13 @@ TaeFile* readTaeFile(FILE* file) {
             fseek(file, event.offsets[2], SEEK_SET);
             fread(&event.type, sizeof(int), 1, file);
 
-            int eventSize = getEventSize(event.type);
-            if(eventSize == -1){
+            // Always the next offset?
+            int paramsOffset;
+            fread(&paramsOffset, sizeof(int), 1, file);
+            fseek(file, paramsOffset, SEEK_SET);
+
+            event.paramCount = getEventParamCount(event.type);
+            if(event.paramCount == -1){
                printf("Unknown event type: %d \n", event.type);
 
                printf("Anim %d  Event: %d  offset: %x \n", n, e, event.offsets[2]);
@@ -140,10 +145,7 @@ TaeFile* readTaeFile(FILE* file) {
                }
 
                throw new std::exception();
-               //goto end;
             }
-
-            event.size = eventSize;
 
             event.shouldScaleDuration = true;
             // Don't scale sounds, it cuts off the sound early and sounds awful
@@ -151,12 +153,7 @@ TaeFile* readTaeFile(FILE* file) {
                event.shouldScaleDuration = false;
             }
 
-            // Subtract size of type, already read.
-            eventSize -= sizeof(int);
-            
-            fread(&event.vars, eventSize, 1, file);
-
-//end:;
+            fread(&event.params, event.paramCount * sizeof(int), 1, file);
          }
          fseek(file, posBuffer, SEEK_SET);
 
@@ -167,63 +164,62 @@ TaeFile* readTaeFile(FILE* file) {
    return taeFile;
 }
 
-// Includes type and vars
-size_t getEventSize(int eventType) {
+int getEventParamCount(int eventType) {
    switch (eventType) {
-      case 0: return 20;
-      case 1: return 20;
-      case 2: return 24;
-      case 5: return 16;
-      case 8: return 56;
-      case 16: return 24;
-      case 24: return 24;
-      case 32: return 12;
-      case 33: return 12;
-      case 64: return 16;
-      case 65: return 12;
-      case 66: return 12;
-      case 67: return 12;
-      case 96: return 20;
-      case 99: return 20;
-      case 100: return 40;
-      case 101: return 12;
-      case 104: return 20;
-      case 108: return 20;
-      case 109: return 20;
-      case 110: return 12;
-      case 112: return 16;
-      case 114: return 20;
-      case 115: return 20;
-      case 116: return 20;
-      case 118: return 20;
-      case 119: return 20;
-      case 120: return 32;
-      case 121: return 16;
-      case 128: return 16;
-      case 129: return 24;
-      case 130: return 24;
-      case 144: return 20;
-      case 145: return 12;
-      case 193: return 16;
-      case 224: return 12;
-      case 225: return 12;
-      case 226: return 12;
-      case 228: return 20;
-      case 229: return 12;
-      case 231: return 12;
-      case 232: return 12;
-      case 233: return 16;
-      case 236: return 20;
-      case 300: return 24;
-      case 301: return 12;
-      case 302: return 12;
-      case 303: return 12;
-      case 304: return 16;
-      case 306: return 20;
-      case 307: return 16;
-      case 308: return 32;
-      case 401: return 12;
-      case 500: return 12;
+      case 0: return 3;
+      case 1: return 3;
+      case 2: return 4;
+      case 5: return 2;
+      case 8: return 12;
+      case 16: return 4;
+      case 24: return 4;
+      case 32: return 1;
+      case 33: return 1;
+      case 64: return 2;
+      case 65: return 1;
+      case 66: return 1;
+      case 67: return 1;
+      case 96: return 3;
+      case 99: return 3;
+      case 100: return 8;
+      case 101: return 1;
+      case 104: return 3;
+      case 108: return 3;
+      case 109: return 3;
+      case 110: return 1;
+      case 112: return 2;
+      case 114: return 3;
+      case 115: return 3;
+      case 116: return 3;
+      case 118: return 3;
+      case 119: return 3;
+      case 120: return 6;
+      case 121: return 2;
+      case 128: return 2;
+      case 129: return 4;
+      case 130: return 4;
+      case 144: return 3;
+      case 145: return 1;
+      case 193: return 2;
+      case 224: return 1;
+      case 225: return 1;
+      case 226: return 1;
+      case 228: return 3;
+      case 229: return 1;
+      case 231: return 1;
+      case 232: return 1;
+      case 233: return 2;
+      case 236: return 3;
+      case 300: return 4;
+      case 301: return 1;
+      case 302: return 1;
+      case 303: return 1;
+      case 304: return 2;
+      case 306: return 3;
+      case 307: return 2;
+      case 308: return 6;
+      case 401: return 1;
+      case 500: return 1;
       default: return -1;
    }
 }

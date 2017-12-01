@@ -11,7 +11,7 @@ namespace json {
 // readTaeFile.cpp
 TaeFile* readTaeFile(std::wstring sourceTaePath);
 TaeFile* readTaeFile(FILE* file);
-size_t getEventSize(int eventType);
+int getEventParamCount(int eventType);
 
 // writeTaeFile.cpp
 void writeTaeFile(std::wstring outputPath, TaeFile* taeFile);

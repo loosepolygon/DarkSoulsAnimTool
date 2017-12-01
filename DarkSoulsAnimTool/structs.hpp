@@ -21,11 +21,12 @@ struct Event {
    float beginTime;
    float endTime;
 
-   int vars[56 / 4];
+   //int paramsOffset;
+   int paramCount;
+   int params[12];
 
    int offsets[3];
 
-   int size;
    bool shouldScaleDuration;
 };
 

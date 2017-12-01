@@ -44,10 +44,9 @@ json::JSON eventToJson(Event event) {
 
    json::JSON jsonVars = json::Object();
 
-   int varCount = event.size / 4 - 1;
    char varKey[64];
-   for (int n = 0; n < varCount; ++n) {
-      if (varCount > 10) {
+   for (int n = 0; n < event.paramCount; ++n) {
+      if (event.paramCount > 10) {
          snprintf(varKey, sizeof(varKey), "var%02d", n);
       }else{
          snprintf(varKey, sizeof(varKey), "var%d", n);
@@ -58,7 +57,7 @@ json::JSON eventToJson(Event event) {
          if (!varInfo.IsNull()) {
             strcat(varKey, ("_" + varInfo["varName"].ToString()).c_str());
 
-            int* intValue = reinterpret_cast<int*>(&event.vars) + n;
+            int* intValue = reinterpret_cast<int*>(&event.params) + n;
             float* floatValue = (float*)intValue;
 
             std::string valueType = varInfo["valueType"].ToString();
@@ -71,14 +70,14 @@ json::JSON eventToJson(Event event) {
                throw new std::exception();
             }
          }else {
-            jsonVars[varKey] = getUnknown(reinterpret_cast<int*>(&event.vars) + n);
+            jsonVars[varKey] = getUnknown(reinterpret_cast<int*>(&event.params) + n);
          }
       }else {
-         jsonVars[varKey] = getUnknown(reinterpret_cast<int*>(&event.vars) + n);
+         jsonVars[varKey] = getUnknown(reinterpret_cast<int*>(&event.params) + n);
       }
    }
 
-   result["vars"] = jsonVars;
+   result["params"] = jsonVars;
 
    return result;
 }
