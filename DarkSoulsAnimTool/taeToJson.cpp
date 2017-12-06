@@ -120,7 +120,6 @@ json::JSON taeToJson(TaeFile* taeFile) {
       json::JSON dataHeader = {
          "unk1", getUnknown(&animData.header.unk1),
          "unk2", getUnknown(&animData.header.unk2),
-         "unk3", getUnknown(&animData.header.unk3),
       };
 
       // Sort events by their type number for easier analysis

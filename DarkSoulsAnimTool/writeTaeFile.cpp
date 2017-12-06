@@ -180,6 +180,7 @@ void writeTaeFile(std::wstring outputPath, TaeFile* taeFile) {
          }
 
          std::vector<float> timeFloats = getUniqueFloats(animData);
+         animData.header.timeFloatCount = timeFloats.size();
 
          if (animData.events.size() > 0) {
             appendData(bytes, timeFloats.data(), timeFloats.size() * sizeof(float));

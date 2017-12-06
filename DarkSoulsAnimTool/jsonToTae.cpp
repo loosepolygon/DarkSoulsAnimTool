@@ -111,7 +111,6 @@ TaeFile* jsonToTae(json::JSON root) {
 
       animData.header.unk1 = getUnknown(j["header"]["unk1"]);
       animData.header.unk2 = getUnknown(j["header"]["unk2"]);
-      animData.header.unk3 = getUnknown(j["header"]["unk3"]);
 
       for (json::JSON jsonEvent : j["events"].ArrayRange()) {
          animData.events.push_back(jsonToEvent(jsonEvent));

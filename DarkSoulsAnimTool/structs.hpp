@@ -60,7 +60,7 @@ struct AnimData {
       int eventOffset;
       int unk1;
       int unk2;
-      int unk3;
+      int timeFloatCount;
       int someEventOffset;
       int animFileOffset;
    } header;
