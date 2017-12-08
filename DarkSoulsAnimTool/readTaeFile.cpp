@@ -147,12 +147,6 @@ TaeFile* readTaeFile(FILE* file) {
                throw new std::exception();
             }
 
-            event.shouldScaleDuration = true;
-            // Don't scale sounds, it cuts off the sound early and sounds awful
-            if (event.type == 129) {
-               event.shouldScaleDuration = false;
-            }
-
             fread(&event.params, event.paramCount * sizeof(int), 1, file);
          }
          fseek(file, posBuffer, SEEK_SET);

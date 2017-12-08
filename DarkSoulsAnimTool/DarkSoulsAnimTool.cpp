@@ -255,9 +255,9 @@ void scaleHkxAnimationDuration(std::string sourceXmlPath, std::string outputXmlP
 
 const char usageString[] =
    "Commands: \n"
-   "* scaleAnim taePath animFileName scale \n"
-   "* importTae taePath [outputDir]          - Converts TAE to JSON \n"
-   "* exportTae jsonPath [outputDir]         - Converts JSON to TAE \n"
+   "* scaleAnim taePath animSearchKey speedMult   - Scale the animation speed \n"
+   "* importTae taePath [outputDir]               - Convert TAE to JSON \n"
+   "* exportTae jsonPath [outputDir]              - Convert JSON to TAE \n"
 ;
 
 void printUsage() {

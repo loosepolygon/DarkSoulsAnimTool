@@ -8,95 +8,84 @@
 #include <algorithm>
 
 void scaleAnim(
-   std::wstring sourceTaePath,
-   std::wstring animFileName,
-   float scale
+   std::wstring taePath,
+   std::wstring animSearchKey,
+   float speedMult
 ) {
-   FILE* file = _wfopen(sourceTaePath.c_str(), L"rb+");
+   std::transform(animSearchKey.begin(), animSearchKey.end(), animSearchKey.begin(), towlower);
 
-   if (file == NULL) {
-      wprintf_s(L"Cannot open file: %s\n", sourceTaePath.c_str());
+   FILE* file = _wfopen(taePath.c_str(), L"rb");
+
+   if (file == nullptr) {
+      wprintf_s(L"Cannot open file: %s\n", taePath.c_str());
       return;
    }
 
+   fseek(file, 0, SEEK_END);
+   long fileSize = ftell(file);
+   fseek(file, 0, SEEK_SET);
+
+   // Write .bak file if it doesn't exist
+   std::wstring backupPath = taePath + L".bak";
+   FILE* backupFile = _wfopen(backupPath.c_str(), L"rb");
+   if (backupFile == nullptr) {
+      backupFile = _wfopen(backupPath.c_str(), L"wb");
+
+      byte* bytes = new byte[fileSize];
+      fread(bytes, 1, fileSize, file);
+      fseek(file, 0, SEEK_SET);
+
+      fwrite(bytes, 1, fileSize, backupFile);
+
+      delete bytes;
+
+      wprintf_s(L"Wrote backup file: %s\n", backupPath.c_str());
+   }
+   fclose(backupFile);
+
    TaeFile* taeFile = readTaeFile(file);
 
-   byte* bytes = NULL;
-   int fileSize = 0;
-   std::vector<Event>* events = NULL;
-
-   std::transform(animFileName.begin(), animFileName.end(), animFileName.begin(), towlower);
+   fclose(file);
 
    bool found = false;
+   std::vector<Event>* events = nullptr;
+   std::wstring foundAnim;
    for (size_t n = 0; n < taeFile->animData.size(); ++n) {
-      std::wstring nameLowercase = taeFile->animData[n].animFile.name;
-      std::transform(nameLowercase.begin(), nameLowercase.end(), nameLowercase.begin(), towlower);
+      std::wstring animName = taeFile->animData[n].animFile.name;
+      std::transform(animName.begin(), animName.end(), animName.begin(), towlower);
 
-      std::wstring nameWithoutWin = nameLowercase;
-      if (nameWithoutWin.size() > 3) {
-         nameWithoutWin.resize(nameWithoutWin.size() - 3);
-      }
+      found = animName.find(animSearchKey) != std::wstring::npos;
 
-      if (nameLowercase == animFileName || nameWithoutWin == animFileName) {
-         found = true;
+      if (found) {
+         foundAnim = animName;
 
          events = &taeFile->animData[n].events;
-
-         fileSize = taeFile->header.fileSize;
-         bytes = new byte[fileSize];
-         fseek(file, 0, SEEK_SET);
-         fread(bytes, 1, fileSize, file);
 
          break;
       }
    }
 
    if (found) {
-      std::wstring destTaePath = sourceTaePath + L".out";
+      wprintf_s(L"Scaling events for anim \"%s\"...\n", foundAnim.c_str());
 
-      wprintf_s(L"Found anim file, saving to %s...\n", destTaePath.c_str());
+      for (Event& event : *events) {
+         // Don't scale sounds, it cuts off the sound early and sounds awful
+         bool shouldScaleDuration = !(event.type == 128 || event.type == 129);
 
-      std::vector<int> offsetsChanged;
-
-      for (size_t e = 0; e < events->size(); ++e) {
-         Event& event = (*events)[e];
-
-         void* ptr = &bytes[event.offsets[0]];
-         float& startTimeRef = *reinterpret_cast<float*>(ptr);
-         ptr = &bytes[event.offsets[1]];
-         float& endTimeRef = *reinterpret_cast<float*>(ptr);
-         float duration = endTimeRef - startTimeRef;
-
-         int offset = event.offsets[0];
-         bool found = std::find(offsetsChanged.begin(), offsetsChanged.end(), offset) != offsetsChanged.end();
-         if (found == false) {
-            startTimeRef *= scale;
-            offsetsChanged.push_back(offset);
-         }
-
-         offset = event.offsets[1];
-         found = std::find(offsetsChanged.begin(), offsetsChanged.end(), offset) != offsetsChanged.end();
-         if (found == false) {
-            if (event.shouldScaleDuration) {
-               endTimeRef *= scale;
-            }else{
-               endTimeRef = startTimeRef + duration;
-            }
-
-            offsetsChanged.push_back(offset);
+         if (shouldScaleDuration) {
+            event.beginTime /= speedMult;
+            event.endTime /= speedMult;
+         }else{
+            float duration = event.endTime - event.beginTime;
+            event.beginTime /= speedMult;
+            event.endTime = event.beginTime + duration;
          }
       }
 
-      _wfreopen(destTaePath.c_str(), L"wb", file);
-
-      fwrite(bytes, 1, fileSize, file);
-
-      printf("Done!\n");
+      writeTaeFile(taePath, taeFile);
    }else{
-      wprintf_s(L"Did not find %s in %s \n", animFileName.c_str(), sourceTaePath.c_str());
+      wprintf_s(L"Did not find \"%s\" in %s \n", animSearchKey.c_str(), taePath.c_str());
    }
-
-   fclose(file);
 }
 
 void importTae(std::wstring sourceTaePath, std::wstring outputDir) {

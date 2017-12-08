@@ -26,8 +26,6 @@ struct Event {
    int params[12];
 
    int offsets[3];
-
-   bool shouldScaleDuration;
 };
 
 struct AnimFile {
