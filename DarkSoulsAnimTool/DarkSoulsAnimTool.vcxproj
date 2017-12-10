@@ -155,9 +155,9 @@
     <ClCompile Include="writeTaeFile.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cxxopts.hpp" />
     <ClInclude Include="funcs.hpp" />
     <ClInclude Include="json.hpp" />
-    <ClInclude Include="resource.h" />
     <ClInclude Include="knownEventTypes.hpp" />
     <ClInclude Include="structs.hpp" />
   </ItemGroup>

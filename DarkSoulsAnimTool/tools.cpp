@@ -8,16 +8,17 @@
 #include <algorithm>
 
 void scaleAnim(
-   std::wstring taePath,
+   std::wstring sourceTaePath,
+   std::wstring destTaePath,
    std::wstring animSearchKey,
    float speedMult
 ) {
    std::transform(animSearchKey.begin(), animSearchKey.end(), animSearchKey.begin(), towlower);
 
-   FILE* file = _wfopen(taePath.c_str(), L"rb");
+   FILE* file = _wfopen(sourceTaePath.c_str(), L"rb");
 
    if (file == nullptr) {
-      wprintf_s(L"Cannot open file: %s\n", taePath.c_str());
+      wprintf_s(L"Cannot open file: %s\n", sourceTaePath.c_str());
       return;
    }
 
@@ -26,7 +27,7 @@ void scaleAnim(
    fseek(file, 0, SEEK_SET);
 
    // Write .bak file if it doesn't exist
-   std::wstring backupPath = taePath + L".bak";
+   std::wstring backupPath = sourceTaePath + L".bak";
    FILE* backupFile = _wfopen(backupPath.c_str(), L"rb");
    if (backupFile == nullptr) {
       backupFile = _wfopen(backupPath.c_str(), L"wb");
@@ -82,23 +83,22 @@ void scaleAnim(
          }
       }
 
-      writeTaeFile(taePath, taeFile);
+      writeTaeFile(destTaePath, taeFile);
    }else{
-      wprintf_s(L"Did not find \"%s\" in %s \n", animSearchKey.c_str(), taePath.c_str());
+      wprintf_s(L"Did not find \"%s\" in %s \n", animSearchKey.c_str(), sourceTaePath.c_str());
    }
 }
 
-void importTae(std::wstring sourceTaePath, std::wstring outputDir) {
+void importTae(std::wstring sourceTaePath, std::wstring destJsonPath) {
    TaeFile* taeFile = readTaeFile(sourceTaePath);
    json::JSON root = taeToJson(taeFile);
    std::string jsonText = root.dump();
 
-   std::wstring outputPath = outputDir + L'\\' + getBaseFileName(sourceTaePath) + L".json";
-   wprintf_s(L"Importing %s as %s...\n", sourceTaePath.c_str(), outputPath.c_str());
-   FILE* file = _wfopen(outputPath.c_str(), L"wb");
+   wprintf_s(L"Importing %s as %s...\n", sourceTaePath.c_str(), destJsonPath.c_str());
+   FILE* file = _wfopen(destJsonPath.c_str(), L"wb");
 
    if (file == NULL) {
-      wprintf_s(L"Cannot open file for writing: %s\n", outputPath.c_str());
+      wprintf_s(L"Cannot open file for writing: %s\n", destJsonPath.c_str());
       return;
    }
 
@@ -107,7 +107,7 @@ void importTae(std::wstring sourceTaePath, std::wstring outputDir) {
    fclose(file);
 }
 
-void exportTae(std::wstring sourceJsonPath, std::wstring outputDir) {
+void exportTae(std::wstring sourceJsonPath, std::wstring destTaePath) {
    std::string jsonText;
    {
       FILE* file = _wfopen(sourceJsonPath.c_str(), L"rb");
@@ -127,10 +127,5 @@ void exportTae(std::wstring sourceJsonPath, std::wstring outputDir) {
 
    json::JSON root = json::JSON::Load(jsonText);
    TaeFile* taeFile = jsonToTae(root);
-
-   std::wstring fileName = getBaseFileName(sourceJsonPath);
-   stringReplace(fileName, L".json", L"");
-   stringReplace(fileName, L".tae", L"");
-   std::wstring outputPath = outputDir + L'\\' + fileName + L".tae";
-   writeTaeFile(outputPath, taeFile);
+   writeTaeFile(destTaePath, taeFile);
 }

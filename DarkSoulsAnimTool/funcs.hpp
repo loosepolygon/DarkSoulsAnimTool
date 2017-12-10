@@ -25,6 +25,7 @@ TaeFile* jsonToTae(json::JSON root);
 // tools.cpp
 void scaleAnim(
    std::wstring sourceTaePath,
+   std::wstring destTaePath,
    std::wstring animFileName,
    float scale
 );
