@@ -67,6 +67,7 @@ std::wstring otherOptionalString(std::wstring other, std::wstring def = L"") {
 int main(int argCount, char** args) {
    std::string inputFileArg;
    std::string outputFileArg;
+   bool sortEvents = false;
 
    cxxopts::Options options(args[0]);
    {
@@ -75,6 +76,11 @@ int main(int argCount, char** args) {
          ("help", "Print help")
          ("i, input", "Input file", cxxopts::value(inputFileArg), "PATH")
          ("o, output", "Output file", cxxopts::value(outputFileArg), "PATH")
+         (
+            "s, sortEvents",
+            "Sort events by their type number when outputting JSON",
+            cxxopts::value(sortEvents)
+         )
       ;
 
       try {
@@ -111,7 +117,8 @@ int main(int argCount, char** args) {
    }else if (command == L"importtae") {
       auto s1 = otherString(inputFile, "input");
       auto s2 = otherOptionalString(outputFile, inputFile + L".json");
-      importTae(s1, s2);
+      auto b2 = sortEvents;
+      importTae(s1, s2, b2);
    }else if (command == L"exporttae") {
       auto s1 = otherString(inputFile, "input");
       auto s2 = otherOptionalString(outputFile);

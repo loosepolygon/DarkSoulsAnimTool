@@ -89,9 +89,9 @@ void scaleAnim(
    }
 }
 
-void importTae(std::wstring sourceTaePath, std::wstring destJsonPath) {
+void importTae(std::wstring sourceTaePath, std::wstring destJsonPath, bool sortEvents) {
    TaeFile* taeFile = readTaeFile(sourceTaePath);
-   json::JSON root = taeToJson(taeFile);
+   json::JSON root = taeToJson(taeFile, sortEvents);
    std::string jsonText = root.dump();
 
    wprintf_s(L"Importing %s as %s...\n", sourceTaePath.c_str(), destJsonPath.c_str());

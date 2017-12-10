@@ -82,7 +82,7 @@ json::JSON eventToJson(Event event) {
    return result;
 }
 
-json::JSON taeToJson(TaeFile* taeFile) {
+json::JSON taeToJson(TaeFile* taeFile, bool sortEventsByType) {
    json::JSON root;
 
    auto header = taeFile->header;
@@ -122,13 +122,14 @@ json::JSON taeToJson(TaeFile* taeFile) {
          "unk2", getUnknown(&animData.header.unk2),
       };
 
-      // Sort events by their type number for easier analysis
-      std::sort(
-         animData.events.begin(),
-         animData.events.end(),
-         [](const Event& e1, const Event& e2) -> bool {return e1.type < e2.type;}
-      );
-
+      if (sortEventsByType) {
+         std::sort(
+            animData.events.begin(),
+            animData.events.end(),
+            [](const Event& e1, const Event& e2) -> bool {return e1.type < e2.type; }
+         );
+      }
+      
       auto events = json::Array();
       for (Event event : animData.events) {
          events.append(eventToJson(event));
