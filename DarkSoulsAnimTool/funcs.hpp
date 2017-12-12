@@ -33,7 +33,9 @@ void importTae(std::wstring sourceTaePath, std::wstring destJsonPath, bool sortE
 void exportTae(std::wstring sourceJsonPath, std::wstring destTaePath);
 
 // utility.cpp
-std::wstring getBaseFileName(std::wstring path);
+void getPathInfo(const std::wstring& path, std::wstring& dir, std::wstring& fileName);
+void createBackupFile(const std::wstring& path);
+bool fileExists(const std::wstring& path);
 void stringReplace(
    std::wstring& text,
    const std::wstring& from,

@@ -1,23 +1,68 @@
 #include "funcs.hpp"
+#include "structs.hpp"
 
 #include "UTF8-CPP\checked.h"
 
 #include <algorithm>
+#include <cstdio>
 
 #define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
 
-std::wstring getBaseFileName(std::wstring path) {
-   std::wstring result = path;
+void getPathInfo(const std::wstring& path, std::wstring& dir, std::wstring& fileName){
+   dir = L"./";
+   fileName = path;
 
    for (int n = path.size(); n --> 0;) {
       if (path[n] == L'/' || path[n] == L'\\') {
-         result = &path[n + 1];
+         dir = path.substr(0, n + 1);
+         fileName = &path[n + 1];
          break;
       }
    }
+}
 
-   return result;
+void createBackupFile(const std::wstring& path) {
+   FILE* file = _wfopen(path.c_str(), L"rb");
+
+   if (file == nullptr) {
+      wprintf_s(L"Cannot open file: %s\n", path.c_str());
+      exit(1);
+   }
+
+   fseek(file, 0, SEEK_END);
+   long fileSize = ftell(file);
+   fseek(file, 0, SEEK_SET);
+
+   std::wstring backupPath = path + L".bak";
+   if (fileExists(backupPath)) {
+      return;
+   }
+   FILE* backupFile = _wfopen(backupPath.c_str(), L"wb");
+
+   byte* bytes = new byte[fileSize];
+   fread(bytes, 1, fileSize, file);
+
+   fclose(file);
+
+   fwrite(bytes, 1, fileSize, backupFile);
+
+   delete bytes;
+
+   wprintf_s(L"Wrote backup file: %s\n", backupPath.c_str());
+
+   fclose(backupFile);
+}
+
+bool fileExists(const std::wstring& path) {
+   FILE* file = _wfopen(path.c_str(), L"rb");
+   if (file) {
+      fclose(file);
+      return true;
+   }
+   else {
+      return false;
+   }
 }
 
 void stringReplace(std::wstring& text, const std::wstring& from, const std::wstring& to) {

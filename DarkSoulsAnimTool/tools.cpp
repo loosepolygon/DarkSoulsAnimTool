@@ -13,36 +13,15 @@ void scaleAnim(
    std::wstring animSearchKey,
    float speedMult
 ) {
+   createBackupFile(sourceTaePath);
+
    std::transform(animSearchKey.begin(), animSearchKey.end(), animSearchKey.begin(), towlower);
 
    FILE* file = _wfopen(sourceTaePath.c_str(), L"rb");
-
    if (file == nullptr) {
       wprintf_s(L"Cannot open file: %s\n", sourceTaePath.c_str());
-      return;
+      exit(1);
    }
-
-   fseek(file, 0, SEEK_END);
-   long fileSize = ftell(file);
-   fseek(file, 0, SEEK_SET);
-
-   // Write .bak file if it doesn't exist
-   std::wstring backupPath = sourceTaePath + L".bak";
-   FILE* backupFile = _wfopen(backupPath.c_str(), L"rb");
-   if (backupFile == nullptr) {
-      backupFile = _wfopen(backupPath.c_str(), L"wb");
-
-      byte* bytes = new byte[fileSize];
-      fread(bytes, 1, fileSize, file);
-      fseek(file, 0, SEEK_SET);
-
-      fwrite(bytes, 1, fileSize, backupFile);
-
-      delete bytes;
-
-      wprintf_s(L"Wrote backup file: %s\n", backupPath.c_str());
-   }
-   fclose(backupFile);
 
    TaeFile* taeFile = readTaeFile(file);
 
@@ -66,27 +45,30 @@ void scaleAnim(
       }
    }
 
-   if (found) {
-      wprintf_s(L"Scaling events for anim \"%s\"...\n", foundAnim.c_str());
-
-      for (Event& event : *events) {
-         // Don't scale sounds, it cuts off the sound early and sounds awful
-         bool shouldScaleDuration = !(event.type == 128 || event.type == 129);
-
-         if (shouldScaleDuration) {
-            event.beginTime /= speedMult;
-            event.endTime /= speedMult;
-         }else{
-            float duration = event.endTime - event.beginTime;
-            event.beginTime /= speedMult;
-            event.endTime = event.beginTime + duration;
-         }
-      }
-
-      writeTaeFile(destTaePath, taeFile);
-   }else{
+   if (found == false) {
       wprintf_s(L"Did not find \"%s\" in %s \n", animSearchKey.c_str(), sourceTaePath.c_str());
+      exit(1);
    }
+
+   wprintf_s(L"Found anim \"%s\" in %s \n", foundAnim.c_str(), sourceTaePath.c_str());
+
+   wprintf_s(L"Scaling events... \n");
+
+   for (Event& event : *events) {
+      // Don't scale sounds, it cuts off the sound early and sounds awful
+      bool shouldScaleDuration = !(event.type == 128 || event.type == 129);
+
+      if (shouldScaleDuration) {
+         event.beginTime /= speedMult;
+         event.endTime /= speedMult;
+      }else{
+         float duration = event.endTime - event.beginTime;
+         event.beginTime /= speedMult;
+         event.endTime = event.beginTime + duration;
+      }
+   }
+
+   writeTaeFile(destTaePath, taeFile);
 }
 
 void importTae(std::wstring sourceTaePath, std::wstring destJsonPath, bool sortEvents) {
