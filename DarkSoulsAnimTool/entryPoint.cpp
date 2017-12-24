@@ -124,7 +124,8 @@ int main(int argCount, char** args) {
       auto s2 = otherOptionalString(outputFile);
 
       if (s2.empty()) {
-         std::wstring fileName = getBaseFileName(s1);
+         std::wstring dir, fileName;
+         getPathInfo(s1, dir, fileName);
          stringReplace(fileName, L".json", L"");
          stringReplace(fileName, L".tae", L"");
          s2 = fileName + L".tae";

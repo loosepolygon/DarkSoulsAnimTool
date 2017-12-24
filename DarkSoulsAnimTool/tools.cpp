@@ -1,6 +1,7 @@
 #include "structs.hpp"
 #include "funcs.hpp"
 #include "json.hpp"
+#include "tinyxml2.h"
 
 #include <string>
 #include <cstdio>
@@ -66,6 +67,100 @@ void scaleAnim(
          event.beginTime /= speedMult;
          event.endTime = event.beginTime + duration;
       }
+   }
+
+   wprintf_s(L"Scaling anim... \n");
+
+   stringReplace(foundAnim, L".hkxwin", L".hkx");
+
+   std::wstring dir, fileName;
+   getPathInfo(sourceTaePath, dir, fileName);
+   std::wstring hkxwin32Dir = getFullPath(dir + L"../../hkxwin32/");
+   std::wstring animPath = hkxwin32Dir + foundAnim;
+   
+   if (fileExists(animPath) == false) {
+      wprintf_s(L"Could not find anim file: %s \n", animPath.c_str());
+      exit(1);
+   }
+
+   std::wstring intermediateDir = hkxwin32Dir + L"DSAnimTool-temp/";
+   _wmkdir(intermediateDir.c_str());
+
+   std::wstring executeText(256, L'\0');
+   std::wstring xmlPath = intermediateDir + foundAnim + L".xml";
+   swprintf(
+      &executeText[0],
+      L"hkxcmd convert -i \"%s\" -o \"%s\" -v:XML -f SAVE_TEXT_FORMAT^|SAVE_TEXT_NUMBERS",
+      animPath.c_str(),
+      xmlPath.c_str()
+   );
+
+   int returnCode = _wsystem(executeText.c_str());
+   if (returnCode != 0) {
+      exit(1);
+   }
+
+   // ---------
+
+   using namespace tinyxml2;
+
+   XMLDocument xml;
+   xml.LoadFile(utf16ToUtf8(xmlPath).c_str());
+
+   auto parseError = [](const char* text) {
+      printf_s("Error parsing xml file: %s \n", text);
+      exit(1);
+   };
+
+   auto findAll = [](
+      XMLElement* rootElement,
+      const char* key,
+      const char* value
+   ) -> std::vector<XMLElement*> {
+      std::vector<XMLElement*> result;
+
+      XMLElement* e = rootElement->FirstChildElement();
+      while (e) {
+         if (e->Attribute(key, value)) {
+            result.push_back(e);
+         }
+
+         e = e->NextSiblingElement();
+      }
+
+      return result;
+   };
+
+   XMLElement* data = xml.FirstChildElement("hkpackfile")->FirstChildElement("hksection");
+   if (!data->Attribute("name", "__data__")) {
+      parseError("Bad __data__");
+   }
+
+   for (XMLElement* anim : findAll(data, "class", "hkaSplineCompressedAnimation")) {
+      XMLElement* animData = findAll(anim, "name", "data")[0];
+      std::string bytesString = animData->GetText();
+      std::vector<byte> bytes;
+      
+      char* textStart = nullptr;
+      for (char& c : bytesString) {
+         bool isNumber = c >= '0' && c <= '9';
+         if (textStart && isNumber == false) {
+            c = '\0';
+
+            int num = atoi(textStart);
+            bytes.push_back((byte)num);
+
+            textStart = nullptr;
+         }else if (textStart == nullptr && isNumber) {
+            textStart = &c;
+         }
+      }
+
+      FILE* file = fopen("havok SCA data.bin", "wb");
+
+      fwrite(bytes.data(), 1, bytes.size(), file);
+
+      fclose(file);
    }
 
    writeTaeFile(destTaePath, taeFile);

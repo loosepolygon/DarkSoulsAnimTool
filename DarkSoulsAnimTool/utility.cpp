@@ -8,6 +8,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
+#include "Shlwapi.h"
 
 void getPathInfo(const std::wstring& path, std::wstring& dir, std::wstring& fileName){
    dir = L"./";
@@ -20,6 +21,12 @@ void getPathInfo(const std::wstring& path, std::wstring& dir, std::wstring& file
          break;
       }
    }
+}
+
+std::wstring getFullPath(const std::wstring& path) {
+   wchar_t buffer[MAX_PATH];
+   GetFullPathNameW(path.c_str(), MAX_PATH, buffer, NULL);
+   return buffer;
 }
 
 void createBackupFile(const std::wstring& path) {

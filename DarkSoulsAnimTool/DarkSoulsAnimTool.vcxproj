@@ -150,6 +150,7 @@
     <ClCompile Include="jsonToTae.cpp" />
     <ClCompile Include="readTaeFile.cpp" />
     <ClCompile Include="taeToJson.cpp" />
+    <ClCompile Include="tinyxml2.cpp" />
     <ClCompile Include="tools.cpp" />
     <ClCompile Include="utility.cpp" />
     <ClCompile Include="writeTaeFile.cpp" />
@@ -160,6 +161,7 @@
     <ClInclude Include="json.hpp" />
     <ClInclude Include="knownEventTypes.hpp" />
     <ClInclude Include="structs.hpp" />
+    <ClInclude Include="tinyxml2.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
