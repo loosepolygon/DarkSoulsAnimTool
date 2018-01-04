@@ -7,6 +7,8 @@
 #include <exception>
 #include <algorithm>
 
+using namespace TAE;
+
 template <typename T>
 void appendData(std::vector<byte>& bytes, T* data) {
    size_t oldSize = bytes.size();

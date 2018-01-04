@@ -29,7 +29,7 @@ void scaleAnim(
    fclose(file);
 
    bool found = false;
-   std::vector<Event>* events = nullptr;
+   std::vector<TAE::Event>* events = nullptr;
    std::wstring foundAnim;
    for (size_t n = 0; n < taeFile->animData.size(); ++n) {
       std::wstring animName = taeFile->animData[n].animFile.name;
@@ -55,7 +55,7 @@ void scaleAnim(
 
    wprintf_s(L"Scaling events... \n");
 
-   for (Event& event : *events) {
+   for (TAE::Event& event : *events) {
       // Don't scale sounds, it cuts off the sound early and sounds awful
       bool shouldScaleDuration = !(event.type == 128 || event.type == 129);
 
@@ -168,10 +168,10 @@ void scaleAnim(
       //fwrite(bytes.data(), 1, bytes.size(), file);
       //fclose(file);
 
-      SCA::SCAData* scaData = readSCAData(trackCount, bytes);
+      Anims::SCAData* scaData = readSCAData(trackCount, bytes);
 
       // int newFrameCount = -1;
-      // std::vector<SCA::Frame> frames = getFrames(scaData, newFrameCount);
+      // std::vector<Anims::Frame> frames = getFrames(scaData, newFrameCount);
    }
 
    writeTaeFile(destTaePath, taeFile);

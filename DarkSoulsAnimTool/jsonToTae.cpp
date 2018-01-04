@@ -8,6 +8,8 @@
 #include <vector>
 #include <algorithm>
 
+using namespace TAE;
+
 // For debugging unknowns that are written as "123 or 0.000"
 int getUnknown(json::JSON value) {
    if (value.JSONType() == json::JSON::Class::Integral) {

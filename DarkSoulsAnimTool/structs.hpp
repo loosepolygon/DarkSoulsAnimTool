@@ -106,7 +106,7 @@ namespace TAE{
    };
 }
 
-namespace SCA{
+namespace Anims{
    struct Vector{
       float data[4] = {0};
    };
@@ -156,5 +156,4 @@ namespace SCA{
    };
 }
 
-// TODO: lol
-using namespace TAE;
+using TAE::TaeFile;

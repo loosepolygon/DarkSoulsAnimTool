@@ -8,6 +8,8 @@
 #include <vector>
 #include <algorithm>
 
+using namespace TAE;
+
 std::string getUnknown(void* source) {
    char text[64];
    int i = *reinterpret_cast<int*>(source);

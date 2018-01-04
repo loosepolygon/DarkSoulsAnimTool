@@ -6,6 +6,8 @@
 #include <vector>
 #include <exception>
 
+using namespace TAE;
+
 std::wstring readNameW(FILE* file, int offset) {
    long posBuffer = ftell(file);
 
