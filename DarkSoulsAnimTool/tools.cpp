@@ -90,6 +90,7 @@ void scaleAnim(
    std::wstring xmlPath = intermediateDir + foundAnim + L".xml";
    swprintf(
       &executeText[0],
+      executeText.size(),
       L"hkxcmd convert -i \"%s\" -o \"%s\" -v:XML -f SAVE_TEXT_FORMAT^|SAVE_TEXT_NUMBERS",
       animPath.c_str(),
       xmlPath.c_str()
@@ -137,30 +138,40 @@ void scaleAnim(
    }
 
    for (XMLElement* anim : findAll(data, "class", "hkaSplineCompressedAnimation")) {
-      XMLElement* animData = findAll(anim, "name", "data")[0];
-      std::string bytesString = animData->GetText();
+      int trackCount = 0;
       std::vector<byte> bytes;
-      
-      char* textStart = nullptr;
-      for (char& c : bytesString) {
-         bool isNumber = c >= '0' && c <= '9';
-         if (textStart && isNumber == false) {
-            c = '\0';
+      {
+         XMLElement* trackCountElement = findAll(anim, "name", "numberOfTransformTracks")[0];
+         std::string text = trackCountElement->GetText();
+         trackCount = atoi(text.c_str());
 
-            int num = atoi(textStart);
-            bytes.push_back((byte)num);
+         XMLElement* animData = findAll(anim, "name", "data")[0];
+         text = animData->GetText();
+         char* textStart = nullptr;
+         for (char& c : text) {
+            bool isNumber = c >= '0' && c <= '9';
+            if (textStart && isNumber == false) {
+               c = '\0';
 
-            textStart = nullptr;
-         }else if (textStart == nullptr && isNumber) {
-            textStart = &c;
+               int num = atoi(textStart);
+               bytes.push_back((byte)num);
+
+               textStart = nullptr;
+            }else if (textStart == nullptr && isNumber) {
+               textStart = &c;
+            }
          }
       }
 
-      FILE* file = fopen("havok SCA data.bin", "wb");
+      // Debug output
+      //FILE* file = fopen("havok SCA data.bin", "wb");
+      //fwrite(bytes.data(), 1, bytes.size(), file);
+      //fclose(file);
 
-      fwrite(bytes.data(), 1, bytes.size(), file);
+      SCA::SCAData* scaData = readSCAData(trackCount, bytes);
 
-      fclose(file);
+      // int newFrameCount = -1;
+      // std::vector<SCA::Frame> frames = getFrames(scaData, newFrameCount);
    }
 
    writeTaeFile(destTaePath, taeFile);

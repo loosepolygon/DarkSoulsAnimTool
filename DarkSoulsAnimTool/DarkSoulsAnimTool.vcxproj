@@ -88,7 +88,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
@@ -148,6 +148,7 @@
     <ClCompile Include="entryPoint.cpp" />
     <ClCompile Include="json.cpp" />
     <ClCompile Include="jsonToTae.cpp" />
+    <ClCompile Include="sca.cpp" />
     <ClCompile Include="readTaeFile.cpp" />
     <ClCompile Include="taeToJson.cpp" />
     <ClCompile Include="tinyxml2.cpp" />
@@ -162,6 +163,9 @@
     <ClInclude Include="knownEventTypes.hpp" />
     <ClInclude Include="structs.hpp" />
     <ClInclude Include="tinyxml2.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dataReading.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

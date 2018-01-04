@@ -1,8 +1,9 @@
 #pragma once
 
-#include <string>
+#include "structs.hpp"
 
-struct TaeFile;
+#include <string>
+#include <vector>
 
 namespace json {
    class JSON;
@@ -21,6 +22,9 @@ json::JSON taeToJson(TaeFile* taeFile, bool sortEventsByType);
 
 // taeToJson.cpp
 TaeFile* jsonToTae(json::JSON root);
+
+// sca.cpp
+SCA::SCAData* readSCAData(int trackCount, const std::vector<byte>& bytes);
 
 // tools.cpp
 void scaleAnim(
@@ -44,3 +48,6 @@ void stringReplace(
 );
 std::wstring utf8ToUtf16(std::string inputText);
 std::string utf16ToUtf8(std::wstring inputText);
+
+// Inline headers
+#include "dataReading.inl"
