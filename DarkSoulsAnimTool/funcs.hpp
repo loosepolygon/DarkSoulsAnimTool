@@ -24,7 +24,7 @@ json::JSON taeToJson(TaeFile* taeFile, bool sortEventsByType);
 TaeFile* jsonToTae(json::JSON root);
 
 // sca.cpp
-Anims::SCAData* readSCAData(int trackCount, const std::vector<byte>& bytes);
+SCA::SCAData* readSCAData(int trackCount, const std::vector<byte>& bytes);
 
 
 // tools.cpp

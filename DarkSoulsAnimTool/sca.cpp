@@ -1,7 +1,7 @@
 #include "structs.hpp"
 #include "funcs.hpp"
 
-using namespace Anims;
+using namespace SCA;
 using namespace DataReading;
 
 int getXBitInt(byte* source, int size, int from) {

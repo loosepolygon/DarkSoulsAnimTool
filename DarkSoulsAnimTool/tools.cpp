@@ -168,7 +168,7 @@ void scaleAnim(
       //fwrite(bytes.data(), 1, bytes.size(), file);
       //fclose(file);
 
-      Anims::SCAData* scaData = readSCAData(trackCount, bytes);
+      SCA::SCAData* scaData = readSCAData(trackCount, bytes);
 
       // int newFrameCount = -1;
       // std::vector<Anims::Frame> frames = getFrames(scaData, newFrameCount);

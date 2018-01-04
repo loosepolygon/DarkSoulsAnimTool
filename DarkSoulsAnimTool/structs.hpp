@@ -106,7 +106,7 @@ namespace TAE{
    };
 }
 
-namespace Anims{
+namespace SCA{
    struct Vector{
       float data[4] = {0};
    };
