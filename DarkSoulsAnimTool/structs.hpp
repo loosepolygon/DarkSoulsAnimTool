@@ -132,7 +132,7 @@ namespace SCA{
 
       struct{
          short controlPointCount = 0;
-         short degree = 0;
+         byte degree = 0;
          std::vector<byte> knots;
       } nurbs;
 
@@ -140,13 +140,10 @@ namespace SCA{
          Vector min;
          Vector max;
          std::vector<Vector> controlPoints;
-         // TODO: Is this still here for anims that don't loop?
-         Vector copyOfFirst;
       } vectors;
 
       struct{
          std::vector<Quat> controlPoints;
-         Quat copyOfFirst;
       } quats;
    };
 

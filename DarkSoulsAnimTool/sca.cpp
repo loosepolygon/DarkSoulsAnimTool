@@ -183,8 +183,8 @@ SCAData* readSCAData(int trackCount, const std::vector<byte>& bytes){
 
       // NURBS data
       auto& nurbs = segment.nurbs;
-      nurbs.controlPointCount = readSingle<short>(dataReader);
-      nurbs.degree = readSingle<short>(dataReader);
+      nurbs.controlPointCount = readSingle<short>(dataReader) + 1;
+      nurbs.degree = readSingle<byte>(dataReader);
       nurbs.knots.resize(nurbs.controlPointCount + nurbs.degree + 1);
       readArray<byte>(dataReader, nurbs.knots.data(), nurbs.knots.size());
 
@@ -231,7 +231,6 @@ SCAData* readSCAData(int trackCount, const std::vector<byte>& bytes){
          for(int n = 0; n < nurbs.controlPointCount; ++n){
             readVector(vectors.controlPoints[n]);
          }
-         readVector(vectors.copyOfFirst);
 
          continue;
       }
@@ -244,7 +243,6 @@ SCAData* readSCAData(int trackCount, const std::vector<byte>& bytes){
          for(int n = 0; n < nurbs.controlPointCount; ++n){
             quats.controlPoints[n] = readQuat(dataReader, segment.quantizationSize);
          }
-         quats.copyOfFirst = readQuat(dataReader, segment.quantizationSize);
 
          align(dataReader, 4);
 
