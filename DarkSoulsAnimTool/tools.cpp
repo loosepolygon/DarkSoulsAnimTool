@@ -8,6 +8,10 @@
 #include <vector>
 #include <algorithm>
 
+// TESTING
+#include <sstream>
+#include <iomanip>
+
 void scaleAnim(
    std::wstring sourceTaePath,
    std::wstring destTaePath,
@@ -137,47 +141,94 @@ void scaleAnim(
       parseError("Bad __data__");
    }
 
-   for (XMLElement* anim : findAll(data, "class", "hkaSplineCompressedAnimation")) {
-      int trackCount = 0;
-      std::vector<byte> bytes;
-      {
-         XMLElement* trackCountElement = findAll(anim, "name", "numberOfTransformTracks")[0];
-         std::string text = trackCountElement->GetText();
-         trackCount = atoi(text.c_str());
+   auto animElements = findAll(data, "class", "hkaSplineCompressedAnimation");
+   if(animElements.size() != 1){
+      throw "Bad SCA count in XML";
+   }
+   XMLElement* animElement = animElements[0];
 
-         XMLElement* animData = findAll(anim, "name", "data")[0];
-         text = animData->GetText();
-         char* textStart = nullptr;
-         for (char& c : text) {
-            bool isNumber = c >= '0' && c <= '9';
-            if (textStart && isNumber == false) {
-               c = '\0';
+   Anims::Animation* animation = new Anims::Animation;
+   std::vector<byte> bytes;
+   {
+      std::string text;
 
-               int num = atoi(textStart);
-               bytes.push_back((byte)num);
+      text = findAll(animElement, "name", "numberOfTransformTracks")[0]->GetText();
+      animation->boneCount = atoi(text.c_str());
 
-               textStart = nullptr;
-            }else if (textStart == nullptr && isNumber) {
-               textStart = &c;
-            }
+      text = findAll(animElement, "name", "numFrames")[0]->GetText();
+      animation->frameCount = atoi(text.c_str());
+
+      XMLElement* animData = findAll(animElement, "name", "data")[0];
+      text = animData->GetText();
+      char* textStart = nullptr;
+      for (char& c : text) {
+         bool isNumber = c >= '0' && c <= '9';
+         if (textStart && isNumber == false) {
+            c = '\0';
+
+            int num = atoi(textStart);
+            bytes.push_back((byte)num);
+
+            textStart = nullptr;
+         }else if (textStart == nullptr && isNumber) {
+            textStart = &c;
          }
       }
+   }
 
-      // Debug output
-      //FILE* file = fopen("havok SCA data.bin", "wb");
-      //fwrite(bytes.data(), 1, bytes.size(), file);
+   // Debug output
+   //FILE* file = fopen("havok SCA data.bin", "wb");
+   //fwrite(bytes.data(), 1, bytes.size(), file);
+   //fclose(file);
+
+   SCA::SCAData* scaData = readSCAData(animation->boneCount, bytes);
+
+   // int newFrameCount = -1;
+   getFrames(animation, scaData);
+
+   // Testing
+   {
+      //std::stringstream ss;
+
+      // Positions
+      //for(int b = 0; b < animation->boneCount; ++b){
+      //   for(int f = 0; f < animation->frameCount; ++f){
+      //      Anims::Vector pos = animation->frames[f].positions[b];
+      //      ss << "                <pos ";
+      //      ss << "px=\"" << std::fixed << std::setprecision(8) << pos.data[0] << "\" ";
+      //      ss << "py=\"" << std::fixed << std::setprecision(8) << pos.data[1] << "\" ";
+      //      ss << "pz=\"" << std::fixed << std::setprecision(8) << pos.data[2] << "\" ";
+      //      ss << "pw=\"" << std::fixed << std::setprecision(8) << 0.0f << "\" ";
+      //      ss << "/>\n";
+      //   }
+      //}
+      //std::string resultText = ss.str();
+      //FILE* file = fopen("my positions.txt", "wb");
+      //fwrite(resultText.c_str(), 1, resultText.size(), file);
       //fclose(file);
 
-      SCA::SCAData* scaData = readSCAData(trackCount, bytes);
-
-      // int newFrameCount = -1;
-      // std::vector<Anims::Frame> frames = getFrames(scaData, newFrameCount);
+      // Rotations
+      //for(int b = 0; b < animation->boneCount; ++b){
+      //   for(int f = 0; f < animation->frameCount; ++f){
+      //      Anims::Quat rot = animation->frames[f].rotations[b];
+      //      ss << "                <rot ";
+      //      ss << "rx=\"" << std::fixed << std::setprecision(8) << rot.data[0] << "\" ";
+      //      ss << "ry=\"" << std::fixed << std::setprecision(8) << rot.data[1] << "\" ";
+      //      ss << "rz=\"" << std::fixed << std::setprecision(8) << rot.data[2] << "\" ";
+      //      ss << "rw=\"" << std::fixed << std::setprecision(8) << rot.data[3] << "\" ";
+      //      ss << "/>\n";
+      //   }
+      //}
+      //std::string resultText = ss.str();
+      //FILE* file = fopen("my rotations.txt", "wb");
+      //fwrite(resultText.c_str(), 1, resultText.size(), file);
+      //fclose(file);
    }
 
    writeTaeFile(destTaePath, taeFile);
 }
 
-void importTae(std::wstring sourceTaePath, std::wstring destJsonPath, bool sortEvents) {
+void importTae(std::wstring sourceTaePath, std::wstring destJsonPath, bool sortEvents) {           
    TaeFile* taeFile = readTaeFile(sourceTaePath);
    json::JSON root = taeToJson(taeFile, sortEvents);
    std::string jsonText = root.dump();

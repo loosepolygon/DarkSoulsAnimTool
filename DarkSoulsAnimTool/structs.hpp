@@ -5,6 +5,13 @@
 
 typedef unsigned char byte;
 
+enum class TType{
+   invalid,
+   position,
+   rotation,
+   scale,
+};
+
 namespace DataReading{
    struct DataReader{
       const std::vector<byte>& bytes;
@@ -112,18 +119,20 @@ namespace SCA{
    };
 
    struct Quat{
-      float data[4] = {0};
+      float data[4] = {0.0f, 0.0f, 0.0f, 1.0f};
    };
+
+   // TODO: a Scale struct? Would make default identity values easier.
 
    // A "segment" could be an xz vector
    // (with another "segment" of a static Y float after)
    struct TrackSegment{
       int trackIndex = -1;
       // Only used for vector components
-      bool mask[4] = {false};
+      bool mask[4] = {true, true, true, true};
       Vector defaultVector;
       bool isStatic = false;
-      bool isVector = false;
+      TType tType;
       int quantizationSize = 0;
 
       Vector staticVector;
@@ -150,6 +159,29 @@ namespace SCA{
    struct SCAData{
       std::vector<int> maskAndQuantization;
       std::vector<TrackSegment> trackSegments;
+   };
+}
+
+namespace Anims{
+   struct Vector{
+      float data[3] = {0};
+   };
+
+   struct Quat{
+      float data[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+   };
+
+   struct Frame{
+      int number = -1;
+      std::vector<Vector> positions;
+      std::vector<Quat> rotations;
+      std::vector<Vector> scales;
+   };
+
+   struct Animation{
+      int boneCount = 0;
+      int frameCount = 0;
+      std::vector<Frame> frames;
    };
 }
 
