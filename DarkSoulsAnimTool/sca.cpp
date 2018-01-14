@@ -3,6 +3,7 @@
 
 using namespace SCA;
 using namespace DataReading;
+using namespace DataWriting;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // NURBS curve handling
@@ -99,7 +100,7 @@ T getNurbsControlPoint(
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Rest of the SCA stuff
+// SCA reading
 
 int getXBitInt(byte* source, int size, int from) {
    int currentIndex = from;
@@ -119,11 +120,12 @@ int getXBitInt(byte* source, int size, int from) {
 }
 
 float getQuatFloat(int number, int numBits){
-   float max = (float)((1 << numBits) - 2);
+   const float max = (float)((1 << numBits) - 2);
+
    float ratio = (((float)number / max) - 0.5f) * 2.0f;
    float result = ratio * (sqrtf(2.0f) / 2.0f);
 
-   if(number > (int)max){
+   if(number > (int)max || number < 0){
       throw "getQuatFloat error";
    }
 
@@ -412,7 +414,7 @@ void getFrames(Anims::Animation* animation, SCAData* scaData){
       // Changing vector:
       if(!segment.isStatic && segment.tType != TType::rotation){
          // for(Anims::Frame& frame : animation->frames){
-         for(int n = 0; n < animation->frames.size(); ++n){
+         for(size_t n = 0; n < animation->frames.size(); ++n){
             auto& frame = animation->frames[n];
 
             Vector vector = getNurbsControlPoint<Vector>(
@@ -441,6 +443,177 @@ void getFrames(Anims::Animation* animation, SCAData* scaData){
                (float)frame.number
             );
             memcpy(frame.rotations[segment.trackIndex].data, quat.data, sizeof(float) * 4);
+         }
+      }
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// SCA writing
+
+void setXBitInt(byte* source, int size, int from, int value) {
+   int currentIndex = from;
+   for (int n = 0; n < size; ++n) {
+      int byteIndex = currentIndex / 8;
+      int bitIndex = currentIndex % 8;
+
+      int b = (value & (1 << n)) ? 1 : 0;
+      source[byteIndex] |= (b << bitIndex);
+
+      ++currentIndex;
+   }
+}
+
+int getQuat12(float number, int numBits){
+   const int max = (1 << numBits) - 2;
+
+   const float sqrt2 = sqrtf(2.0f);
+   const float sqrt2o2 = sqrt2 / 2.0f;
+   float ratio = (number + sqrt2o2) / sqrt2;
+   int result = (int)(ratio * (float)max);
+
+   if(result > max || result < 0){
+      throw "getQuat12 error";
+   }
+
+   return result;
+}
+
+void writeQuat(std::vector<byte>& bytes, Anims::Quat quat){
+   int missingIndex = -1;
+   float maxComponent = 0.0f;
+   bool isNegative = false;
+   for(int c = 0; c < 4; ++c){
+      float f = abs(quat.data[c]);
+      if(f > maxComponent){
+         missingIndex = c;
+         maxComponent = f;
+         isNegative = quat.data[c] < 0.0f;
+      }
+   }
+
+   /*if(isNegative){
+      for(int c = 0; c < 4; ++c) quat.data[c] = -quat.data[c];
+   }*/
+
+   float used[3];
+   int currentIndex = 0;
+   for(int c = 0; c < 4; ++c){
+      if(c != missingIndex){
+         used[currentIndex] = quat.data[c];
+         ++currentIndex;
+      }
+   }
+
+   byte quatBytes[5] = {};
+
+   setXBitInt(quatBytes, 12, 0, getQuat12(used[0], 12));
+   setXBitInt(quatBytes, 12, 12, getQuat12(used[1], 12));
+   setXBitInt(quatBytes, 12, 24, getQuat12(used[2], 12));
+   setXBitInt(quatBytes,  2, 36, missingIndex);
+   setXBitInt(quatBytes,  1, 38, isNegative ? 1 : 0);
+
+   appendData(bytes, quatBytes, sizeof(quatBytes));
+}
+
+void writeFramesAsSCA(Anims::Animation* animation, std::vector<byte>& bytes){
+   // Write mask and quantization
+
+   for(int bone = 0; bone < animation->boneCount; ++bone){
+      // 16-bit pos/scale, 40-bit quat
+      appendValue<byte>(bytes, 69);
+
+      byte vectorMask = 7 << 4; // Identity W
+      byte quatMask = 15 << 4; // Full XYZ
+      appendValue<byte>(bytes, vectorMask);
+      appendValue<byte>(bytes, quatMask);
+      appendValue<byte>(bytes, vectorMask);
+   }
+
+   // Write each segment as changing, linear curves with each control point written.
+   for(int bone = 0; bone < animation->boneCount; ++bone){
+      for(int b = 1; b < 4; ++b){
+         alignBytes(bytes, 4);
+
+         // NURBS header
+         appendValue<short>(bytes, animation->frameCount - 1);
+         appendValue<byte>(bytes, 1);
+
+         // Knots
+         appendValue<byte>(bytes, 0);
+         for(int n = 0; n < animation->frameCount; ++n){
+            appendValue<byte>(bytes, n);
+         }
+         appendValue<byte>(bytes, animation->frameCount - 1);
+
+         // Control points
+
+         bool isVector = b != (int)TType::rotation;
+         bool isScale = b == (int)TType::scale;
+         
+         if(isVector){
+            alignBytes(bytes, 4);
+
+            // Calculate min/maxes
+            const float minStart = 1000000000.0f;
+            const float maxStart = -1000000000.0f;
+            Anims::Vector minVector = {minStart, minStart, minStart};
+            Anims::Vector maxVector = {maxStart, maxStart, maxStart};
+            for(int frame = 0; frame < animation->frameCount; ++frame){
+               Anims::Vector& vector =
+                  b == (int)TType::position ?
+                  animation->frames[frame].positions[bone] :
+                  animation->frames[frame].scales[bone]
+               ;
+               for(int m = 0; m < 3; ++m){
+                  if(vector.data[m] < minVector.data[m]){
+                     minVector.data[m] = vector.data[m];
+                  }
+                  if(vector.data[m] > maxVector.data[m]){
+                     maxVector.data[m] = vector.data[m];
+                  }
+               }
+            }
+
+            // Write min/maxes
+            for(int m = 0; m < 3; ++m){
+               float& min = minVector.data[m];
+               float& max = maxVector.data[m];
+
+               // Dumb NaN fix for dumb laziness
+               if(min == max){
+                  min -= 1.0f;
+                  max += 1.0f;
+               }
+
+               appendValue<float>(bytes, min);
+               appendValue<float>(bytes, max);
+            }
+
+            // Write vectors
+            for(int frame = 0; frame < animation->frameCount; ++frame){
+               Anims::Vector& vector =
+                  b == (int)TType::position ?
+                  animation->frames[frame].positions[bone] :
+                  animation->frames[frame].scales[bone]
+               ;
+
+               for(int m = 0; m < 3; ++m){
+                  float& min = minVector.data[m];
+                  float& max = maxVector.data[m];
+                  float& value = vector.data[m];
+
+                  float range = max - min;
+                  float ratio = (value - min) / range;
+                  uint16_t compressedValue = (uint32_t)(ratio * 65535.0f);
+                  appendValue<uint16_t>(bytes, compressedValue);
+               }
+            }
+         }else{
+            for(int frame = 0; frame < animation->frameCount; ++frame){
+               Anims::Quat& rotation = animation->frames[frame].rotations[bone];
+               writeQuat(bytes, rotation);
+            }
          }
       }
    }

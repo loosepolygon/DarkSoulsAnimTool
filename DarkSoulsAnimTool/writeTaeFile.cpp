@@ -8,40 +8,7 @@
 #include <algorithm>
 
 using namespace TAE;
-
-template <typename T>
-void appendData(std::vector<byte>& bytes, T* data) {
-   size_t oldSize = bytes.size();
-   size_t addedSize = sizeof(T);
-   bytes.resize(oldSize + addedSize);
-   memcpy(&bytes[oldSize], data, addedSize);
-}
-
-void appendData(std::vector<byte>& bytes, void* data, size_t addedSize) {
-   size_t oldSize = bytes.size();
-   bytes.resize(oldSize + addedSize);
-   memcpy(&bytes[oldSize], data, addedSize);
-}
-
-void appendZeroes(std::vector<byte>& bytes, int zeroCount) {
-   size_t oldSize = bytes.size();
-   size_t addedSize = zeroCount;
-   bytes.resize(oldSize + addedSize);
-   memset(&bytes[oldSize], 0, addedSize);
-}
-
-void appendRefSpace(std::vector<byte>& bytes, int addedSize) {
-   size_t oldSize = bytes.size();
-   bytes.resize(oldSize + addedSize);
-   memset(&bytes[oldSize], 0xEE, addedSize);
-}
-
-void alignBytes(std::vector<byte>& bytes) {
-   int mod = bytes.size() % 4;
-   if (mod != 0) {
-      appendZeroes(bytes, 4 - mod);
-   }
-}
+using namespace DataWriting;
 
 void appendNameW(std::vector<byte>& bytes, const std::wstring& name, int ref = -1) {
    size_t oldSize = bytes.size();

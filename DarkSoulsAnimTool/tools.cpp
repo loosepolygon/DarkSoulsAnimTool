@@ -73,6 +73,8 @@ void scaleAnim(
       }
    }
 
+   writeTaeFile(destTaePath, taeFile);
+
    wprintf_s(L"Scaling anim... \n");
 
    stringReplace(foundAnim, L".hkxwin", L".hkx");
@@ -87,22 +89,28 @@ void scaleAnim(
       exit(1);
    }
 
+   createBackupFile(animPath);
+
    std::wstring intermediateDir = hkxwin32Dir + L"DSAnimTool-temp/";
    _wmkdir(intermediateDir.c_str());
 
-   std::wstring executeText(256, L'\0');
    std::wstring xmlPath = intermediateDir + foundAnim + L".xml";
-   swprintf(
-      &executeText[0],
-      executeText.size(),
-      L"hkxcmd convert -i \"%s\" -o \"%s\" -v:XML -f SAVE_TEXT_FORMAT^|SAVE_TEXT_NUMBERS",
-      animPath.c_str(),
-      xmlPath.c_str()
-   );
 
-   int returnCode = _wsystem(executeText.c_str());
-   if (returnCode != 0) {
-      exit(1);
+   // Call hkxcmd
+   {
+      std::wstring executeText(256, L'\0');
+      swprintf(
+         &executeText[0],
+         executeText.size(),
+         L"hkxcmd convert -i \"%s\" -o \"%s\" -v:XML -f SAVE_TEXT_FORMAT^|SAVE_TEXT_NUMBERS",
+         animPath.c_str(),
+         xmlPath.c_str()
+      );
+
+      int returnCode = _wsystem(executeText.c_str());
+      if (returnCode != 0) {
+         exit(1);
+      }
    }
 
    // ---------
@@ -149,6 +157,7 @@ void scaleAnim(
 
    Anims::Animation* animation = new Anims::Animation;
    std::vector<byte> bytes;
+   XMLElement* animDataElement;
    {
       std::string text;
 
@@ -158,8 +167,8 @@ void scaleAnim(
       text = findAll(animElement, "name", "numFrames")[0]->GetText();
       animation->frameCount = atoi(text.c_str());
 
-      XMLElement* animData = findAll(animElement, "name", "data")[0];
-      text = animData->GetText();
+      animDataElement = findAll(animElement, "name", "data")[0];
+      text = animDataElement->GetText();
       char* textStart = nullptr;
       for (char& c : text) {
          bool isNumber = c >= '0' && c <= '9';
@@ -225,7 +234,49 @@ void scaleAnim(
       //fclose(file);
    }
 
-   writeTaeFile(destTaePath, taeFile);
+   bytes.clear();
+   writeFramesAsSCA(animation, bytes);
+
+   // Debug output
+   //file = fopen("havok SCA data.re.bin", "wb");
+   //fwrite(bytes.data(), 1, bytes.size(), file);
+   //fclose(file);
+
+   // Write binary data as text
+   {
+      char* textBuffer = new char[bytes.size() * 4];
+      char* textP = textBuffer;
+
+      for(size_t n = 0; n < bytes.size(); ++n){
+         int written = sprintf(textP, "%d%s", bytes[n], n % 16 == 15 ? "\n" : " ");
+         textP += written;
+      }
+
+      animDataElement->SetText(textBuffer);
+      delete textBuffer;
+   }
+
+   findAll(animElement, "name", "floatBlockOffsets")[0]->SetText(bytes.size());
+   animDataElement->SetAttribute("numelements", bytes.size());
+
+   xml.SaveFile(utf16ToUtf8(xmlPath).c_str());
+
+   // Call hkxcmd
+   {
+      std::wstring executeText(256, L'\0');
+      swprintf(
+         &executeText[0],
+         executeText.size(),
+         L"hkxcmd convert -i \"%s\" -o \"%s\" -f SAVE_DEFAULT",
+         xmlPath.c_str(),
+         animPath.c_str()
+      );
+
+      int returnCode = _wsystem(executeText.c_str());
+      if (returnCode != 0) {
+         exit(1);
+      }
+   }
 }
 
 void importTae(std::wstring sourceTaePath, std::wstring destJsonPath, bool sortEvents) {           
