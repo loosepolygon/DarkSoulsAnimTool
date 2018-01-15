@@ -6,20 +6,27 @@
 #include <algorithm>
 #include <queue>
 
-const char commandsString[] =
-   "Commands: \n"
-   "* scaleAnim [animSearchKey, speedMult]   - Scale the animation speed \n"
-   "* importTae                              - Convert TAE to JSON \n"
-   "* exportTae                              - Convert JSON to TAE \n"
-   " \n"
-   "Example: \n"
-   ">dsanimtool -i InputTae.tae -o OutputJson.json scaleanim 3005 1.5 \n"
-;
+const char commandsString[] = R"--(
+Commands:
+* scaleAnim [animSearchKey, speedMult]   - Scale the animation speed (does not
+   alter anim "frames, only edits a few \"duration\" values)
+* scaleAnimEx [animSearchKey, ???]       - WIP
+* importTae                              - Convert TAE to JSON
+* exportTae                              - Convert JSON to TAE
+
+Example:
+>dsanimtool -i InputTae.tae -o OutputJson.json scaleanim 3005 1.5
+)--";
+
+void parseError(const std::string& message){
+   printf("Error parsing args: %s\n", message.c_str());
+   printf("%s", commandsString);
+   exit(1);
+}
 
 void checkEmpty(std::queue<std::wstring>& words) {
    if (words.empty()) {
-      printf("Not enough args\n");
-      exit(1);
+      parseError("Not enough args");
    }
 }
 
@@ -49,8 +56,10 @@ float popFloat(std::queue<std::wstring>& words) {
 
 std::wstring otherString(std::wstring& other, const char* arg) {
    if (other.empty()) {
-      printf("Missing required arg: %s \n", arg);
-      exit(1);
+      std::string msg = "Missing required arg: ";
+      msg += arg;
+      msg += "\n";
+      parseError(msg);
    }
 
    return other;
@@ -92,8 +101,7 @@ int main(int argCount, char** args) {
             exit(0);
          }
       }catch (const cxxopts::OptionException& e){
-         printf("error parsing options: %s\n", e.what());
-         exit(1);
+         parseError(e.what());
       }
    }
 

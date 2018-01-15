@@ -9,7 +9,7 @@ static const char * knownEventTypesText = R"--(
    "224": {
       "eventTypeName": "TrackingSpeed",
       "0": {
-         "varName": "degrees",
+         "varName": "degreesPerSecond",
          "valueType": "float"
       }
    }
