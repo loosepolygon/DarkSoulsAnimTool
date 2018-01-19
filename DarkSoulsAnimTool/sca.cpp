@@ -9,32 +9,31 @@ using namespace DataWriting;
 // NURBS curve handling
 // Adopted from https://www.codeproject.com/Articles/1095142/Generate-and-understand-NURBS-curves
 
-float nip(int cpIndex, int cpCount, int degree, std::vector<byte> allKnotBytes, float frame) {
+float nip(int cpIndex, int cpCount, int degree, std::vector<float> allKnots, float time) {
    const int maxOrder = 3 + 1;
    float result[maxOrder + 1];
    float knots[maxOrder + 1];
 
    for(int n = 0; n < degree + 2; ++n){
-      knots[n] = (float)allKnotBytes[cpIndex + n] / (float)(cpCount - 1);
+      knots[n] = allKnots[cpIndex + n];
    }
-   frame /= (float)(cpCount - 1);
 
-   size_t m = allKnotBytes.size() - 1;
-   float firstKnot = (float)allKnotBytes[0] / (float)(cpCount - 1);
-   float lastKnot = (float)allKnotBytes[m] / (float)(cpCount - 1);
+   size_t m = allKnots.size() - 1;
+   float firstKnot = allKnots[0];
+   float lastKnot = allKnots[m];
    if(
-      (cpIndex == 0 && frame == lastKnot) ||
-      (cpIndex == (m - degree - 1) && frame == lastKnot)
+      (cpIndex == 0 && time == firstKnot) ||
+      (cpIndex == (m - degree - 1) && time == lastKnot)
    ){
       return 1;
    }
 
-   if(frame < knots[0] || frame >= knots[degree + 1]){
+   if(time < knots[0] || time >= knots[degree + 1]){
       return 0;
    }
 
    for (int j = 0; j <= degree; j++) {
-      if (frame >= knots[j] && frame < knots[j + 1])
+      if (time >= knots[j] && time < knots[j + 1])
          result[j] = 1;
       else
          result[j] = 0;
@@ -46,7 +45,7 @@ float nip(int cpIndex, int cpCount, int degree, std::vector<byte> allKnotBytes, 
       if(result[0] == 0){
          saved = 0;
       }else{
-         saved = ((frame - knots[0]) * result[0]) / (knots[k] - knots[0]);
+         saved = ((time - knots[0]) * result[0]) / (knots[k] - knots[0]);
       }
 
       for (int j = 0; j < degree - k + 1; j++) {
@@ -58,8 +57,8 @@ float nip(int cpIndex, int cpCount, int degree, std::vector<byte> allKnotBytes, 
             saved = 0;
          } else {
             temp = result[j + 1] / (Uright - Uleft);
-            result[j] = saved + (Uright - frame) * temp;
-            saved = (frame - Uleft) * temp;
+            result[j] = saved + (Uright - time) * temp;
+            saved = (time - Uleft) * temp;
          }
       }
    }
@@ -71,7 +70,7 @@ T getNurbsControlPoint(
    const std::vector<T>& controlPoints,
    bool* mask,
    int degree,
-   const std::vector<byte>& knots,
+   const std::vector<float>& knots,
    float frame
 ){
    T result;
@@ -293,7 +292,14 @@ SCAData* readSCAData(int trackCount, const std::vector<byte>& bytes){
       nurbs.controlPointCount = readSingle<short>(dataReader) + 1;
       nurbs.degree = readSingle<byte>(dataReader);
       nurbs.knots.resize(nurbs.controlPointCount + nurbs.degree + 1);
-      readArray<byte>(dataReader, nurbs.knots.data(), nurbs.knots.size());
+      // Each knot becomes 0 to 1, with 1 being the last frame
+      for(float& knot : nurbs.knots){
+         knot = (float)readSingle<byte>(dataReader);
+      }
+      float knotMult = 1.0f / nurbs.knots[nurbs.knots.size() - 1];
+      for(float& knot : nurbs.knots){
+         knot *= knotMult;
+      }
 
       // Changing vector:
       if(segment.tType != TType::rotation){
@@ -372,6 +378,7 @@ void getFrames(Anims::Animation* animation, SCAData* scaData){
       Anims::Frame& frame = animation->frames[n];
 
       frame.number = n;
+      frame.normalizedTime = (float)n / (float)(animation->frameCount - 1);
 
       frame.positions.resize(animation->boneCount);
       frame.rotations.resize(animation->boneCount);
@@ -422,7 +429,7 @@ void getFrames(Anims::Animation* animation, SCAData* scaData){
                segment.mask,
                segment.nurbs.degree,
                segment.nurbs.knots,
-               (float)frame.number
+               frame.normalizedTime
             );
             if(segment.tType == TType::position){
                memcpy(frame.positions[segment.trackIndex].data, vector.data, sizeof(float) * 3);
@@ -440,7 +447,7 @@ void getFrames(Anims::Animation* animation, SCAData* scaData){
                segment.mask,
                segment.nurbs.degree,
                segment.nurbs.knots,
-               (float)frame.number
+               frame.normalizedTime
             );
             memcpy(frame.rotations[segment.trackIndex].data, quat.data, sizeof(float) * 4);
          }

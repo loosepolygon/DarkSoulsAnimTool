@@ -142,7 +142,8 @@ namespace SCA{
       struct{
          short controlPointCount = 0;
          byte degree = 0;
-         std::vector<byte> knots;
+         // Each knot is 0 to 1
+         std::vector<float> knots;
       } nurbs;
 
       struct{
@@ -173,6 +174,7 @@ namespace Anims{
 
    struct Frame{
       int number = -1;
+      float normalizedTime = 0.0f;
       std::vector<Vector> positions;
       std::vector<Quat> rotations;
       std::vector<Vector> scales;
@@ -181,6 +183,7 @@ namespace Anims{
    struct Animation{
       int boneCount = 0;
       int frameCount = 0;
+      // float duration = 0.0f;
       std::vector<Frame> frames;
    };
 }

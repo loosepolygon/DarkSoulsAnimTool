@@ -225,17 +225,21 @@ void scaleAnimEx(
 
    wprintf_s(L"Scaling anim... \n");
 
-   Anims::Animation* animation = new Anims::Animation;
+   int boneCount;
+   int oldFrameCount;
    std::vector<byte> bytes;
    XMLElement* animDataElement;
    {
       std::string text;
 
       text = findAll(shared->scaElement, "name", "numberOfTransformTracks")[0]->GetText();
-      animation->boneCount = atoi(text.c_str());
+      boneCount = atoi(text.c_str());
 
       text = findAll(shared->scaElement, "name", "numFrames")[0]->GetText();
-      animation->frameCount = atoi(text.c_str());
+      oldFrameCount = atoi(text.c_str());
+
+      // text = findAll(shared->scaElement, "name", "duration")[0]->GetText();
+      // duration = (float)atof(text.c_str());
 
       animDataElement = findAll(shared->scaElement, "name", "data")[0];
       text = animDataElement->GetText();
@@ -260,9 +264,12 @@ void scaleAnimEx(
    //fwrite(bytes.data(), 1, bytes.size(), file);
    //fclose(file);
 
-   SCA::SCAData* scaData = readSCAData(animation->boneCount, bytes);
+   SCA::SCAData* scaData = readSCAData(boneCount, bytes);
 
-   // int newFrameCount = -1;
+   // float newDuration = animation->duration / speedMult;
+   Anims::Animation* animation = new Anims::Animation;
+   animation->boneCount = boneCount;
+   animation->frameCount = (int)((float)oldFrameCount / speedMult + 0.5f);
    getFrames(animation, scaData);
 
    // Testing
@@ -326,8 +333,17 @@ void scaleAnimEx(
       delete textBuffer;
    }
 
-   findAll(shared->scaElement, "name", "floatBlockOffsets")[0]->SetText(bytes.size());
-   animDataElement->SetAttribute("numelements", bytes.size());
+   // Xml fields
+   {
+      findAll(shared->scaElement, "name", "floatBlockOffsets")[0]->SetText(bytes.size());
+      animDataElement->SetAttribute("numelements", bytes.size());
+
+      //int maxFramesPerBlock = 256;
+      //while(maxFramesPerBlock < animation->frameCount){
+      //   maxFramesPerBlock *= 2;
+      //}
+      //findAll(shared->scaElement, "name", "maxFramesPerBlock")[0]->SetText(maxFramesPerBlock);
+   }
 
    shared->xml.SaveFile(utf16ToUtf8(shared->xmlPath).c_str());
 
