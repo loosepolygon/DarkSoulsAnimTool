@@ -33,8 +33,9 @@ void createBackupFile(const std::wstring& path) {
    FILE* file = _wfopen(path.c_str(), L"rb");
 
    if (file == nullptr) {
-      wprintf_s(L"Cannot open file: %s\n", path.c_str());
-      exit(1);
+      // wprintf_s(L"Cannot open file: %s\n", path.c_str());
+      // exit(1);
+      return;
    }
 
    fseek(file, 0, SEEK_END);
@@ -43,6 +44,8 @@ void createBackupFile(const std::wstring& path) {
 
    std::wstring backupPath = path + L".bak";
    if (fileExists(backupPath)) {
+      fclose(file);
+
       return;
    }
    FILE* backupFile = _wfopen(backupPath.c_str(), L"wb");
@@ -69,6 +72,38 @@ bool fileExists(const std::wstring& path) {
    }
    else {
       return false;
+   }
+}
+
+wchar_t textToExecute[1024];
+
+void hkxcmdHkxToXml(const std::wstring& hkx, const std::wstring& xml){
+   swprintf(
+      &textToExecute[0],
+      sizeof(textToExecute),
+      L"hkxcmd convert -i \"%s\" -o \"%s\" -v:XML -f SAVE_TEXT_FORMAT^|SAVE_TEXT_NUMBERS",
+      hkx.c_str(),
+      xml.c_str()
+   );
+
+   int returnCode = _wsystem(textToExecute);
+   if (returnCode != 0) {
+      exit(1);
+   }
+}
+
+void hkxcmdXmlToHkx(const std::wstring& xml, const std::wstring& hkx){
+   swprintf(
+      &textToExecute[0],
+      sizeof(textToExecute),
+      L"hkxcmd convert -i \"%s\" -o \"%s\" -f SAVE_DEFAULT",
+      xml.c_str(),
+      hkx.c_str()
+   );
+
+   int returnCode = _wsystem(textToExecute);
+   if (returnCode != 0) {
+      exit(1);
    }
 }
 

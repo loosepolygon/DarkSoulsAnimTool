@@ -12,13 +12,54 @@
 #include <sstream>
 #include <iomanip>
 
-void scaleAnim(
+using namespace tinyxml2;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Anim scaling
+
+struct ScaleAnimSharedData{
+   TAE::TaeFile* taeFile = nullptr;
+   std::vector<TAE::Event>* taeEvents = nullptr;
+
+   std::wstring sourceAnimPath;
+   std::wstring destAnimPath;
+   std::wstring xmlPath;
+
+   XMLDocument xml;
+   XMLElement* scaElement;
+   XMLElement* motionElement;
+};
+
+std::vector<XMLElement*> findAll(
+   XMLElement* rootElement,
+   const char* key,
+   const char* value
+){
+   std::vector<XMLElement*> result;
+
+   XMLElement* e = rootElement->FirstChildElement();
+   while (e) {
+      if (e->Attribute(key, value)) {
+         result.push_back(e);
+      }
+
+      e = e->NextSiblingElement();
+   }
+
+   return result;
+}
+
+void parseError(const char* text) {
+   printf_s("Error parsing xml file: %s \n", text);
+   exit(1);
+};
+
+ScaleAnimSharedData* scaleAnimShared(
    std::wstring sourceTaePath,
    std::wstring destTaePath,
-   std::wstring animSearchKey,
-   float speedMult
-) {
-   createBackupFile(sourceTaePath);
+   std::wstring animSearchKey
+){
+   ScaleAnimSharedData* shared = new ScaleAnimSharedData;
 
    std::transform(animSearchKey.begin(), animSearchKey.end(), animSearchKey.begin(), towlower);
 
@@ -28,23 +69,21 @@ void scaleAnim(
       exit(1);
    }
 
-   TaeFile* taeFile = readTaeFile(file);
+   shared->taeFile = readTaeFile(file);
 
    fclose(file);
 
    bool found = false;
-   std::vector<TAE::Event>* events = nullptr;
    std::wstring foundAnim;
-   for (size_t n = 0; n < taeFile->animData.size(); ++n) {
-      std::wstring animName = taeFile->animData[n].animFile.name;
+   for (size_t n = 0; n < shared->taeFile->animData.size(); ++n) {
+      std::wstring animName = shared->taeFile->animData[n].animFile.name;
       std::transform(animName.begin(), animName.end(), animName.begin(), towlower);
 
       found = animName.find(animSearchKey) != std::wstring::npos;
 
       if (found) {
          foundAnim = animName;
-
-         events = &taeFile->animData[n].events;
+         shared->taeEvents = &shared->taeFile->animData[n].events;
 
          break;
       }
@@ -57,103 +96,134 @@ void scaleAnim(
 
    wprintf_s(L"Found anim \"%s\" in %s \n", foundAnim.c_str(), sourceTaePath.c_str());
 
-   wprintf_s(L"Scaling events... \n");
-
-   for (TAE::Event& event : *events) {
-      // Don't scale sounds, it cuts off the sound early and sounds awful
-      bool shouldScaleDuration = !(event.type == 128 || event.type == 129);
-
-      if (shouldScaleDuration) {
-         event.beginTime /= speedMult;
-         event.endTime /= speedMult;
-      }else{
-         float duration = event.endTime - event.beginTime;
-         event.beginTime /= speedMult;
-         event.endTime = event.beginTime + duration;
-      }
-   }
-
-   writeTaeFile(destTaePath, taeFile);
-
-   wprintf_s(L"Scaling anim... \n");
-
    stringReplace(foundAnim, L".hkxwin", L".hkx");
 
-   std::wstring dir, fileName;
-   getPathInfo(sourceTaePath, dir, fileName);
-   std::wstring hkxwin32Dir = getFullPath(dir + L"../../hkxwin32/");
-   std::wstring animPath = hkxwin32Dir + foundAnim;
-   
-   if (fileExists(animPath) == false) {
-      wprintf_s(L"Could not find anim file: %s \n", animPath.c_str());
-      exit(1);
-   }
-
-   createBackupFile(animPath);
-
-   std::wstring intermediateDir = hkxwin32Dir + L"DSAnimTool-temp/";
-   _wmkdir(intermediateDir.c_str());
-
-   std::wstring xmlPath = intermediateDir + foundAnim + L".xml";
-
-   // Call hkxcmd
    {
-      std::wstring executeText(256, L'\0');
-      swprintf(
-         &executeText[0],
-         executeText.size(),
-         L"hkxcmd convert -i \"%s\" -o \"%s\" -v:XML -f SAVE_TEXT_FORMAT^|SAVE_TEXT_NUMBERS",
-         animPath.c_str(),
-         xmlPath.c_str()
-      );
+      std::wstring dir, fileName;
+      getPathInfo(sourceTaePath, dir, fileName);
+      std::wstring hkxwin32Dir = getFullPath(dir + L"..\\..\\hkxwin32\\");
+      shared->sourceAnimPath = hkxwin32Dir + foundAnim;
 
-      int returnCode = _wsystem(executeText.c_str());
-      if (returnCode != 0) {
+      if (fileExists(shared->sourceAnimPath) == false) {
+         wprintf_s(L"Could not find anim file: %s \n", shared->sourceAnimPath.c_str());
          exit(1);
       }
+
+      std::wstring intermediateDir = hkxwin32Dir + L"DSAnimTool-temp\\";
+      _wmkdir(intermediateDir.c_str());
+
+      shared->xmlPath = intermediateDir + foundAnim + L".xml";
    }
 
-   // ---------
+   {
+      std::wstring dir, fileName;
+      getPathInfo(destTaePath, dir, fileName);
+      std::wstring hkxwin32Dir = getFullPath(dir + L"..\\..\\hkxwin32\\");
+      shared->destAnimPath = hkxwin32Dir + foundAnim;
+   }
 
-   using namespace tinyxml2;
+   hkxcmdHkxToXml(shared->sourceAnimPath.c_str(), shared->xmlPath.c_str());
 
-   XMLDocument xml;
-   xml.LoadFile(utf16ToUtf8(xmlPath).c_str());
+   // Read XML
 
-   auto parseError = [](const char* text) {
-      printf_s("Error parsing xml file: %s \n", text);
-      exit(1);
-   };
+   shared->xml.LoadFile(utf16ToUtf8(shared->xmlPath).c_str());
 
-   auto findAll = [](
-      XMLElement* rootElement,
-      const char* key,
-      const char* value
-   ) -> std::vector<XMLElement*> {
-      std::vector<XMLElement*> result;
-
-      XMLElement* e = rootElement->FirstChildElement();
-      while (e) {
-         if (e->Attribute(key, value)) {
-            result.push_back(e);
-         }
-
-         e = e->NextSiblingElement();
-      }
-
-      return result;
-   };
-
-   XMLElement* data = xml.FirstChildElement("hkpackfile")->FirstChildElement("hksection");
-   if (!data->Attribute("name", "__data__")) {
+   auto packFileElement = shared->xml.FirstChildElement("hkpackfile");
+   auto dataElement = packFileElement->FirstChildElement("hksection");
+   if (!dataElement->Attribute("name", "__data__")) {
       parseError("Bad __data__");
    }
 
-   auto animElements = findAll(data, "class", "hkaSplineCompressedAnimation");
-   if(animElements.size() != 1){
-      throw "Bad SCA count in XML";
+   shared->scaElement = findAll(dataElement, "class", "hkaSplineCompressedAnimation")[0];
+   shared->motionElement = findAll(dataElement, "class", "hkaDefaultAnimatedReferenceFrame")[0];
+
+   createBackupFile(destTaePath);
+   createBackupFile(shared->destAnimPath);
+
+   return shared;
+}
+
+void scaleAnim(
+   std::wstring sourceTaePath,
+   std::wstring destTaePath,
+   std::wstring animSearchKey,
+   float speedMult
+) {
+   ScaleAnimSharedData* shared = scaleAnimShared(sourceTaePath, destTaePath, animSearchKey);
+
+   wprintf_s(L"Scaling events... \n");
+
+   {
+      for (TAE::Event& event : *shared->taeEvents) {
+         // Don't scale sounds, it cuts off the sound early and sounds awful
+         bool shouldScaleDuration = !(event.type == 128 || event.type == 129);
+
+         if (shouldScaleDuration) {
+            event.beginTime /= speedMult;
+            event.endTime /= speedMult;
+         }else{
+            float duration = event.endTime - event.beginTime;
+            event.beginTime /= speedMult;
+            event.endTime = event.beginTime + duration;
+         }
+      }
+
+      writeTaeFile(destTaePath, shared->taeFile);
    }
-   XMLElement* animElement = animElements[0];
+
+   wprintf_s(L"Scaling anim... \n");
+
+   auto scaleDurationXml = [speedMult](XMLElement* e, bool inverse = false){
+      float duration = (float)(atof(e->GetText()));
+      if(inverse){
+         duration *= speedMult;
+      }else{
+         duration /= speedMult;
+      }
+      char buffer[32];
+      sprintf(buffer, "%f", duration);
+      e->SetText(buffer);
+   };
+   scaleDurationXml(findAll(shared->motionElement, "name", "duration")[0]);
+   scaleDurationXml(findAll(shared->scaElement, "name", "duration")[0]);
+   scaleDurationXml(findAll(shared->scaElement, "name", "blockDuration")[0]);
+   scaleDurationXml(findAll(shared->scaElement, "name", "blockInverseDuration")[0], true);
+   scaleDurationXml(findAll(shared->scaElement, "name", "frameDuration")[0]);
+
+   shared->xml.SaveFile(utf16ToUtf8(shared->xmlPath).c_str());
+
+   hkxcmdXmlToHkx(shared->xmlPath.c_str(), shared->destAnimPath.c_str());
+}
+
+void scaleAnimEx(
+   std::wstring sourceTaePath,
+   std::wstring destTaePath,
+   std::wstring animSearchKey,
+   float speedMult
+) {
+   ScaleAnimSharedData* shared = scaleAnimShared(sourceTaePath, destTaePath, animSearchKey);
+
+   wprintf_s(L"Scaling events... \n");
+
+   {
+      for (TAE::Event& event : *shared->taeEvents) {
+         // Don't scale sounds, it cuts off the sound early and sounds awful
+         bool shouldScaleDuration = !(event.type == 128 || event.type == 129);
+
+         if (shouldScaleDuration) {
+            event.beginTime /= speedMult;
+            event.endTime /= speedMult;
+         }else{
+            float duration = event.endTime - event.beginTime;
+            event.beginTime /= speedMult;
+            event.endTime = event.beginTime + duration;
+         }
+      }
+
+      writeTaeFile(destTaePath, shared->taeFile);
+   }
+
+   wprintf_s(L"Scaling anim... \n");
 
    Anims::Animation* animation = new Anims::Animation;
    std::vector<byte> bytes;
@@ -161,13 +231,13 @@ void scaleAnim(
    {
       std::string text;
 
-      text = findAll(animElement, "name", "numberOfTransformTracks")[0]->GetText();
+      text = findAll(shared->scaElement, "name", "numberOfTransformTracks")[0]->GetText();
       animation->boneCount = atoi(text.c_str());
 
-      text = findAll(animElement, "name", "numFrames")[0]->GetText();
+      text = findAll(shared->scaElement, "name", "numFrames")[0]->GetText();
       animation->frameCount = atoi(text.c_str());
 
-      animDataElement = findAll(animElement, "name", "data")[0];
+      animDataElement = findAll(shared->scaElement, "name", "data")[0];
       text = animDataElement->GetText();
       char* textStart = nullptr;
       for (char& c : text) {
@@ -256,28 +326,16 @@ void scaleAnim(
       delete textBuffer;
    }
 
-   findAll(animElement, "name", "floatBlockOffsets")[0]->SetText(bytes.size());
+   findAll(shared->scaElement, "name", "floatBlockOffsets")[0]->SetText(bytes.size());
    animDataElement->SetAttribute("numelements", bytes.size());
 
-   xml.SaveFile(utf16ToUtf8(xmlPath).c_str());
+   shared->xml.SaveFile(utf16ToUtf8(shared->xmlPath).c_str());
 
-   // Call hkxcmd
-   {
-      std::wstring executeText(256, L'\0');
-      swprintf(
-         &executeText[0],
-         executeText.size(),
-         L"hkxcmd convert -i \"%s\" -o \"%s\" -f SAVE_DEFAULT",
-         xmlPath.c_str(),
-         animPath.c_str()
-      );
-
-      int returnCode = _wsystem(executeText.c_str());
-      if (returnCode != 0) {
-         exit(1);
-      }
-   }
+   hkxcmdXmlToHkx(shared->xmlPath.c_str(), shared->destAnimPath.c_str());
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Other tools
 
 void importTae(std::wstring sourceTaePath, std::wstring destJsonPath, bool sortEvents) {           
    TaeFile* taeFile = readTaeFile(sourceTaePath);

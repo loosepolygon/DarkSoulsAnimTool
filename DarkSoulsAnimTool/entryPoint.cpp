@@ -9,7 +9,7 @@
 const char commandsString[] = R"--(
 Commands:
 * scaleAnim [animSearchKey, speedMult]   - Scale the animation speed (does not
-   alter anim "frames, only edits a few \"duration\" values)
+   alter anim frames, only edits a few "duration" values)
 * scaleAnimEx [animSearchKey, ???]       - WIP
 * importTae                              - Convert TAE to JSON
 * exportTae                              - Convert JSON to TAE
@@ -122,6 +122,12 @@ int main(int argCount, char** args) {
       auto s3 = popString(words);
       float f1 = popFloat(words);
       scaleAnim(s1, s2, s3, f1);
+   }else if (command == L"scaleanimex") {
+      auto s1 = otherString(inputFile, "input");
+      auto s2 = otherOptionalString(outputFile, inputFile);
+      auto s3 = popString(words);
+      float f1 = popFloat(words);
+      scaleAnimEx(s1, s2, s3, f1);
    }else if (command == L"importtae") {
       auto s1 = otherString(inputFile, "input");
       auto s2 = otherOptionalString(outputFile, inputFile + L".json");

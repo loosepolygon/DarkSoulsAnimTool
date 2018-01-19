@@ -35,6 +35,12 @@ void scaleAnim(
    std::wstring animFileName,
    float scale
 );
+void scaleAnimEx(
+   std::wstring sourceTaePath,
+   std::wstring destTaePath,
+   std::wstring animFileName,
+   float scale
+);
 void importTae(std::wstring sourceTaePath, std::wstring destJsonPath, bool sortEvents);
 void exportTae(std::wstring sourceJsonPath, std::wstring destTaePath);
 
@@ -43,6 +49,8 @@ void getPathInfo(const std::wstring& path, std::wstring& dir, std::wstring& file
 std::wstring getFullPath(const std::wstring& path);
 void createBackupFile(const std::wstring& path);
 bool fileExists(const std::wstring& path);
+void hkxcmdHkxToXml(const std::wstring& hkx, const std::wstring& xml);
+void hkxcmdXmlToHkx(const std::wstring& xml, const std::wstring& hkx);
 void stringReplace(
    std::wstring& text,
    const std::wstring& from,
