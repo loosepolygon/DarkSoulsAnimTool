@@ -51,7 +51,7 @@ std::vector<XMLElement*> findAll(
 
 void parseError(const char* text) {
    printf_s("Error parsing xml file: %s \n", text);
-   exit(1);
+   throw;
 };
 
 ScaleAnimSharedData* scaleAnimShared(
@@ -61,43 +61,50 @@ ScaleAnimSharedData* scaleAnimShared(
 ){
    ScaleAnimSharedData* shared = new ScaleAnimSharedData;
 
-   std::transform(animSearchKey.begin(), animSearchKey.end(), animSearchKey.begin(), towlower);
+   // Get TAE file
+   {
+      std::transform(animSearchKey.begin(), animSearchKey.end(), animSearchKey.begin(), towlower);
 
-   FILE* file = _wfopen(sourceTaePath.c_str(), L"rb");
-   if (file == nullptr) {
-      wprintf_s(L"Cannot open file: %s\n", sourceTaePath.c_str());
-      exit(1);
-   }
-
-   shared->taeFile = readTaeFile(file);
-
-   fclose(file);
-
-   bool found = false;
-   std::wstring foundAnim;
-   for (size_t n = 0; n < shared->taeFile->animData.size(); ++n) {
-      std::wstring animName = shared->taeFile->animData[n].animFile.name;
-      std::transform(animName.begin(), animName.end(), animName.begin(), towlower);
-
-      found = animName.find(animSearchKey) != std::wstring::npos;
-
-      if (found) {
-         foundAnim = animName;
-         shared->taeEvents = &shared->taeFile->animData[n].events;
-
-         break;
+      FILE* file = _wfopen(sourceTaePath.c_str(), L"rb");
+      if (file == nullptr) {
+         wprintf_s(L"Cannot open file: %s\n", sourceTaePath.c_str());
+         throw;
       }
+
+      shared->taeFile = readTaeFile(file);
+
+      fclose(file);
    }
 
-   if (found == false) {
-      wprintf_s(L"Did not find \"%s\" in %s \n", animSearchKey.c_str(), sourceTaePath.c_str());
-      exit(1);
+   // Get foundAnim and TAE events
+   std::wstring foundAnim;
+   {
+      bool found = false;
+      for (size_t n = 0; n < shared->taeFile->animData.size(); ++n) {
+         std::wstring animName = shared->taeFile->animData[n].animFile.name;
+         std::transform(animName.begin(), animName.end(), animName.begin(), towlower);
+
+         found = animName.find(animSearchKey) != std::wstring::npos;
+
+         if (found) {
+            foundAnim = animName;
+            shared->taeEvents = &shared->taeFile->animData[n].events;
+
+            break;
+         }
+      }
+
+      if (found == false) {
+         wprintf_s(L"Did not find \"%s\" in %s \n", animSearchKey.c_str(), sourceTaePath.c_str());
+         throw;
+      }
+
+      wprintf_s(L"Found anim \"%s\" in %s \n", foundAnim.c_str(), sourceTaePath.c_str());
+
+      stringReplace(foundAnim, L".hkxwin", L".hkx");
    }
 
-   wprintf_s(L"Found anim \"%s\" in %s \n", foundAnim.c_str(), sourceTaePath.c_str());
-
-   stringReplace(foundAnim, L".hkxwin", L".hkx");
-
+   // Source paths
    {
       std::wstring dir, fileName;
       getPathInfo(sourceTaePath, dir, fileName);
@@ -106,7 +113,7 @@ ScaleAnimSharedData* scaleAnimShared(
 
       if (fileExists(shared->sourceAnimPath) == false) {
          wprintf_s(L"Could not find anim file: %s \n", shared->sourceAnimPath.c_str());
-         exit(1);
+         throw;
       }
 
       std::wstring intermediateDir = hkxwin32Dir + L"DSAnimTool-temp\\";
@@ -115,6 +122,7 @@ ScaleAnimSharedData* scaleAnimShared(
       shared->xmlPath = intermediateDir + foundAnim + L".xml";
    }
 
+   // Dest paths
    {
       std::wstring dir, fileName;
       getPathInfo(destTaePath, dir, fileName);
@@ -125,17 +133,23 @@ ScaleAnimSharedData* scaleAnimShared(
    hkxcmdHkxToXml(shared->sourceAnimPath.c_str(), shared->xmlPath.c_str());
 
    // Read XML
+   {
+      shared->xml.LoadFile(utf16ToUtf8(shared->xmlPath).c_str());
 
-   shared->xml.LoadFile(utf16ToUtf8(shared->xmlPath).c_str());
+      auto packFileElement = shared->xml.FirstChildElement("hkpackfile");
+      auto dataElement = packFileElement->FirstChildElement("hksection");
+      if (!dataElement->Attribute("name", "__data__")) {
+         parseError("Bad __data__");
+      }
 
-   auto packFileElement = shared->xml.FirstChildElement("hkpackfile");
-   auto dataElement = packFileElement->FirstChildElement("hksection");
-   if (!dataElement->Attribute("name", "__data__")) {
-      parseError("Bad __data__");
+      shared->scaElement = findAll(dataElement, "class", "hkaSplineCompressedAnimation")[0];
+      shared->motionElement = findAll(dataElement, "class", "hkaDefaultAnimatedReferenceFrame")[0];
+
+      std::string text = findAll(shared->scaElement, "name", "numberOfFloatTracks")[0]->GetText();
+      if(text == "0"){
+         parseError("Float tracks are not supported yet");
+      }
    }
-
-   shared->scaElement = findAll(dataElement, "class", "hkaSplineCompressedAnimation")[0];
-   shared->motionElement = findAll(dataElement, "class", "hkaDefaultAnimatedReferenceFrame")[0];
 
    createBackupFile(destTaePath);
    createBackupFile(shared->destAnimPath);
