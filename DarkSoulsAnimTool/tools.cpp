@@ -344,10 +344,7 @@ void scaleAnimEx(
 
    SCA::SCAData* scaData = readSCAData(boneCount, bytes);
 
-   Anims::Animation* animation = new Anims::Animation;
-   animation->boneCount = boneCount;
-   animation->frameCount = scaleState.resultFrameCount;
-   getScaledFrames(animation, scaData, scaleState);
+   Anims::RawAnimation* animation = getScaledFrames(scaData, scaleState);
 
    // Testing
    {

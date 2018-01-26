@@ -25,12 +25,11 @@ TaeFile* jsonToTae(json::JSON root);
 
 // sca.cpp
 SCA::SCAData* readSCAData(int trackCount, const std::vector<byte>& bytes);
-void getScaledFrames(
-   Anims::Animation* animation,
+Anims::RawAnimation* getScaledFrames(
    SCA::SCAData* scaData,
    const Anims::ScaleState& scaleState
 );
-void writeFramesAsSCA(Anims::Animation* animation, std::vector<byte>& bytes);
+void writeFramesAsSCA(Anims::RawAnimation* animation, std::vector<byte>& bytes);
 
 // tools.cpp
 void scaleAnim(

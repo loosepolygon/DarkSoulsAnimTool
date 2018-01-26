@@ -196,9 +196,8 @@ namespace Anims{
       std::vector<Vector> scales;
    };
 
-   struct Animation{
+   struct RawAnimation{
       int boneCount = 0;
-      int frameCount = 0;
       std::vector<Frame> frames;
    };
 }

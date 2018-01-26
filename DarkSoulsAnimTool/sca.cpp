@@ -370,14 +370,14 @@ SCAData* readSCAData(int trackCount, const std::vector<byte>& bytes){
    return scaData;
 }
 
-void getScaledFrames(
-   Anims::Animation* animation,
+Anims::RawAnimation* getScaledFrames(
    SCA::SCAData* scaData,
    const Anims::ScaleState& scaleState
 ){
-   animation->frames.clear();
+   Anims::RawAnimation* animation = new Anims::RawAnimation;
+   animation->boneCount = scaData->maskAndQuantization.size();
 
-   animation->frames.resize(animation->frameCount);
+   animation->frames.resize(scaleState.resultFrameCount);
    for(size_t n = 0; n < animation->frames.size(); ++n){
       Anims::Frame& frame = animation->frames[n];
 
@@ -458,6 +458,8 @@ void getScaledFrames(
          }
       }
    }
+
+   return animation;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -528,7 +530,7 @@ void writeQuat(std::vector<byte>& bytes, Anims::Quat quat){
    appendData(bytes, quatBytes, sizeof(quatBytes));
 }
 
-void writeFramesAsSCA(Anims::Animation* animation, std::vector<byte>& bytes){
+void writeFramesAsSCA(Anims::RawAnimation* animation, std::vector<byte>& bytes){
    // Write mask and quantization
 
    for(int bone = 0; bone < animation->boneCount; ++bone){
@@ -548,15 +550,15 @@ void writeFramesAsSCA(Anims::Animation* animation, std::vector<byte>& bytes){
          alignBytes(bytes, 4);
 
          // NURBS header
-         appendValue<short>(bytes, animation->frameCount - 1);
+         appendValue<short>(bytes, (short)animation->frames.size() - 1);
          appendValue<byte>(bytes, 1);
 
          // Knots
          appendValue<byte>(bytes, 0);
-         for(int n = 0; n < animation->frameCount; ++n){
-            appendValue<byte>(bytes, n);
+         for(size_t n = 0; n < animation->frames.size(); ++n){
+            appendValue<byte>(bytes, (byte)n);
          }
-         appendValue<byte>(bytes, animation->frameCount - 1);
+         appendValue<byte>(bytes, (byte)animation->frames.size() - 1);
 
          // Control points
 
@@ -571,7 +573,7 @@ void writeFramesAsSCA(Anims::Animation* animation, std::vector<byte>& bytes){
             const float maxStart = -1000000000.0f;
             Anims::Vector minVector = {minStart, minStart, minStart};
             Anims::Vector maxVector = {maxStart, maxStart, maxStart};
-            for(int frame = 0; frame < animation->frameCount; ++frame){
+            for(size_t frame = 0; frame < animation->frames.size(); ++frame){
                Anims::Vector& vector =
                   b == (int)TType::position ?
                   animation->frames[frame].positions[bone] :
@@ -603,7 +605,7 @@ void writeFramesAsSCA(Anims::Animation* animation, std::vector<byte>& bytes){
             }
 
             // Write vectors
-            for(int frame = 0; frame < animation->frameCount; ++frame){
+            for(size_t frame = 0; frame < animation->frames.size(); ++frame){
                Anims::Vector& vector =
                   b == (int)TType::position ?
                   animation->frames[frame].positions[bone] :
@@ -622,7 +624,7 @@ void writeFramesAsSCA(Anims::Animation* animation, std::vector<byte>& bytes){
                }
             }
          }else{
-            for(int frame = 0; frame < animation->frameCount; ++frame){
+            for(size_t frame = 0; frame < animation->frames.size(); ++frame){
                Anims::Quat& rotation = animation->frames[frame].rotations[bone];
                writeQuat(bytes, rotation);
             }
