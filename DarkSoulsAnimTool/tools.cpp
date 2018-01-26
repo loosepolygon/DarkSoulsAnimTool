@@ -195,35 +195,79 @@ void scaleAnim(
    hkxcmdXmlToHkx(shared->xmlPath.c_str(), shared->destAnimPath.c_str());
 }
 
+Anims::ScaleState getAnimScaleState(
+   std::vector<std::pair<int, float>> scaleArgs,
+   int sourceFrameCount
+){
+   Anims::ScaleState scaleState;
+
+   scaleState.sourceFrameCount = sourceFrameCount;
+   scaleState.sourceDuration = sourceFrameCount * Anims::frameDelta;
+
+   // Populate sourceToResultFrame
+   {
+      scaleState.sourceToResultFrame.resize((int)((float)sourceFrameCount * 1.25f));
+
+      float resultFrame = 0.0f;
+      size_t scaleArgsIndex = 0;
+      float currentSpeedMult = 0.0f;
+      int nextKeyFrame = 0;
+      for(int frame = 0; frame < (int)scaleState.sourceToResultFrame.size(); ++frame){
+         scaleState.sourceToResultFrame[frame] = resultFrame;
+
+         if(frame == nextKeyFrame){
+            currentSpeedMult = scaleArgs[scaleArgsIndex].second;
+            ++scaleArgsIndex;
+            if(scaleArgsIndex == scaleArgs.size()){
+               nextKeyFrame = INT32_MAX;
+            }else{
+               nextKeyFrame = scaleArgs[scaleArgsIndex].first;
+            }
+         }
+
+         resultFrame += 1.0f / currentSpeedMult;
+      }
+   }
+
+   scaleState.resultFrameCount = (int)(scaleState.sourceToResultFrame[sourceFrameCount] + 0.5f);
+   scaleState.resultDuration = (float)scaleState.resultFrameCount * Anims::frameDelta;
+
+   // Populate resultToSourceFrame
+   {
+      scaleState.resultToSourceFrame.resize((int)((float)scaleState.resultFrameCount * 1.25f));
+
+      float sourceFrame = 0.0f;
+      size_t scaleArgsIndex = 0;
+      float currentSpeedMult = 0.0f;
+      int nextKeyFrame = 0;
+      for(int frame = 0; frame < (int)scaleState.resultToSourceFrame.size(); ++frame){
+         scaleState.resultToSourceFrame[frame] = sourceFrame;
+
+         if(frame == nextKeyFrame){
+            currentSpeedMult = scaleArgs[scaleArgsIndex].second;
+            ++scaleArgsIndex;
+            if(scaleArgsIndex == scaleArgs.size()){
+               nextKeyFrame = INT32_MAX;
+            }else{
+               int sourceKeyFrame = scaleArgs[scaleArgsIndex].first;
+               nextKeyFrame = (int)(scaleState.sourceToResultFrame[sourceKeyFrame] + 0.5f);
+            }
+         }
+
+         sourceFrame += 1.0f * currentSpeedMult;
+      }
+   }
+
+   return std::move(scaleState);
+}
+
 void scaleAnimEx(
    std::wstring sourceTaePath,
    std::wstring destTaePath,
    std::wstring animSearchKey,
-   float speedMult
+   std::vector<std::pair<int, float>> scaleArgs
 ) {
    ScaleAnimSharedData* shared = scaleAnimShared(sourceTaePath, destTaePath, animSearchKey);
-
-   wprintf_s(L"Scaling events... \n");
-
-   {
-      for (TAE::Event& event : *shared->taeEvents) {
-         // Don't scale sounds, it cuts off the sound early and sounds awful
-         bool shouldScaleDuration = !(event.type == 128 || event.type == 129);
-
-         if (shouldScaleDuration) {
-            event.beginTime /= speedMult;
-            event.endTime /= speedMult;
-         }else{
-            float duration = event.endTime - event.beginTime;
-            event.beginTime /= speedMult;
-            event.endTime = event.beginTime + duration;
-         }
-      }
-
-      writeTaeFile(destTaePath, shared->taeFile);
-   }
-
-   wprintf_s(L"Scaling anim... \n");
 
    int boneCount;
    int oldFrameCount;
@@ -264,13 +308,46 @@ void scaleAnimEx(
    //fwrite(bytes.data(), 1, bytes.size(), file);
    //fclose(file);
 
+   Anims::ScaleState scaleState = getAnimScaleState(scaleArgs, oldFrameCount);
+
+   // std::vector<int> sourceToScaledFrame = getScaledFrameIndices(scaleArgs, oldFrameCount);
+
+   wprintf_s(L"Scaling events... \n");
+
+   {
+      auto translateScaledTime = [&scaleState](float sourceTime){
+         int sourceFrame = (int)(sourceTime * Anims::frameRate + 0.5f);
+         float scaledFrame = scaleState.sourceToResultFrame[sourceFrame];
+         float scaledTime = scaledFrame * Anims::frameDelta;
+         return scaledTime;
+      };
+
+      for (TAE::Event& event : *shared->taeEvents) {
+         // Don't scale sounds, it cuts off the sound early and sounds awful
+         bool shouldScaleDuration = !(event.type == 128 || event.type == 129);
+
+         float duration = event.endTime - event.beginTime;
+
+         event.beginTime = translateScaledTime(event.beginTime);
+
+         if (shouldScaleDuration) {
+            event.endTime = translateScaledTime(event.endTime);
+         }else{
+            event.endTime = event.beginTime + duration;
+         }
+      }
+
+      writeTaeFile(destTaePath, shared->taeFile);
+   }
+
+   wprintf_s(L"Scaling anim... \n");
+
    SCA::SCAData* scaData = readSCAData(boneCount, bytes);
 
-   // float newDuration = animation->duration / speedMult;
    Anims::Animation* animation = new Anims::Animation;
    animation->boneCount = boneCount;
-   animation->frameCount = (int)((float)oldFrameCount / speedMult + 0.5f);
-   getFrames(animation, scaData);
+   animation->frameCount = scaleState.resultFrameCount;
+   getScaledFrames(animation, scaData, scaleState);
 
    // Testing
    {
@@ -343,6 +420,15 @@ void scaleAnimEx(
       //   maxFramesPerBlock *= 2;
       //}
       //findAll(shared->scaElement, "name", "maxFramesPerBlock")[0]->SetText(maxFramesPerBlock);
+
+      char buffer[32];
+
+      sprintf(buffer, "%f", scaleState.resultDuration);
+      findAll(shared->motionElement, "name", "duration")[0]->SetText(buffer);
+      findAll(shared->scaElement, "name", "duration")[0]->SetText(buffer);
+
+      sprintf(buffer, "%d", scaleState.resultFrameCount);
+      findAll(shared->scaElement, "name", "numFrames")[0]->SetText(buffer);
    }
 
    shared->xml.SaveFile(utf16ToUtf8(shared->xmlPath).c_str());

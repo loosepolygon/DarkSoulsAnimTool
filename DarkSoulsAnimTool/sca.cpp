@@ -22,8 +22,8 @@ float nip(int cpIndex, int cpCount, int degree, std::vector<float> allKnots, flo
    float firstKnot = allKnots[0];
    float lastKnot = allKnots[m];
    if(
-      (cpIndex == 0 && time == firstKnot) ||
-      (cpIndex == (m - degree - 1) && time == lastKnot)
+      (cpIndex == 0 && time <= firstKnot) ||
+      (cpIndex == (m - degree - 1) && time >= lastKnot)
    ){
       return 1;
    }
@@ -71,7 +71,7 @@ T getNurbsControlPoint(
    bool* mask,
    int degree,
    const std::vector<float>& knots,
-   float frame
+   float time
 ){
    T result;
 
@@ -79,13 +79,13 @@ T getNurbsControlPoint(
 
    float rationalWeight = 0;
    for(size_t n = 0; n < controlPoints.size(); n++){
-      float temp = nip(n, controlPoints.size(), degree, knots, frame);
+      float temp = nip(n, controlPoints.size(), degree, knots, time);
       // temp *= 1.0f; // weight is always 1
       rationalWeight += temp;
    }
 
    for(size_t n = 0; n < controlPoints.size(); n++){
-      float mult = nip(n, controlPoints.size(), degree, knots, frame);
+      float mult = nip(n, controlPoints.size(), degree, knots, time);
       // mult *= 1.0f;
       mult /= rationalWeight;
       for(int m = 0; m < 4; ++m){
@@ -370,7 +370,11 @@ SCAData* readSCAData(int trackCount, const std::vector<byte>& bytes){
    return scaData;
 }
 
-void getFrames(Anims::Animation* animation, SCAData* scaData){
+void getScaledFrames(
+   Anims::Animation* animation,
+   SCA::SCAData* scaData,
+   const Anims::ScaleState& scaleState
+){
    animation->frames.clear();
 
    animation->frames.resize(animation->frameCount);
@@ -378,7 +382,8 @@ void getFrames(Anims::Animation* animation, SCAData* scaData){
       Anims::Frame& frame = animation->frames[n];
 
       frame.number = n;
-      frame.normalizedTime = (float)n / (float)(animation->frameCount - 1);
+      float sourceTime = scaleState.resultToSourceFrame[n] * Anims::frameDelta;
+      frame.sourceNormalizedTime = sourceTime / scaleState.sourceDuration;
 
       frame.positions.resize(animation->boneCount);
       frame.rotations.resize(animation->boneCount);
@@ -429,7 +434,7 @@ void getFrames(Anims::Animation* animation, SCAData* scaData){
                segment.mask,
                segment.nurbs.degree,
                segment.nurbs.knots,
-               frame.normalizedTime
+               frame.sourceNormalizedTime
             );
             if(segment.tType == TType::position){
                memcpy(frame.positions[segment.trackIndex].data, vector.data, sizeof(float) * 3);
@@ -447,7 +452,7 @@ void getFrames(Anims::Animation* animation, SCAData* scaData){
                segment.mask,
                segment.nurbs.degree,
                segment.nurbs.knots,
-               frame.normalizedTime
+               frame.sourceNormalizedTime
             );
             memcpy(frame.rotations[segment.trackIndex].data, quat.data, sizeof(float) * 4);
          }

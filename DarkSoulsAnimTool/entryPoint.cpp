@@ -10,7 +10,8 @@ const char commandsString[] = R"--(
 Commands:
 * scaleAnim [animSearchKey, speedMult]   - Scale the animation speed (does not
    alter anim frames, only edits a few "duration" values)
-* scaleAnimEx [animSearchKey, ???]       - WIP
+* scaleAnimEx [animSearchKey, scaleArgs] - scaleArgs is pairs of
+   [frame,speedMult] Example that speeds up the end of the anim: 0 1 65 1.5
 * importTae                              - Convert TAE to JSON
 * exportTae                              - Convert JSON to TAE
 
@@ -21,7 +22,7 @@ Example:
 void parseError(const std::string& message){
    printf("Error parsing args: %s\n", message.c_str());
    printf("%s", commandsString);
-   exit(1);
+   throw;
 }
 
 void checkEmpty(std::queue<std::wstring>& words) {
@@ -44,6 +45,14 @@ std::wstring popOptionalString(std::queue<std::wstring>& words, const std::wstri
    }else{
       return popString(words);
    }
+}
+
+int popInt(std::queue<std::wstring>& words) {
+   checkEmpty(words);
+
+   int result = _wtoi(words.front().c_str());
+   words.pop();
+   return result;
 }
 
 float popFloat(std::queue<std::wstring>& words) {
@@ -126,8 +135,31 @@ int main(int argCount, char** args) {
       auto s1 = otherString(inputFile, "input");
       auto s2 = otherOptionalString(outputFile, inputFile);
       auto s3 = popString(words);
-      float f1 = popFloat(words);
-      scaleAnimEx(s1, s2, s3, f1);
+      
+      std::vector<std::pair<int, float>> scaleArgs;
+      for(int n = 0;; ++n){
+         bool isEven = n % 2 == 0;
+
+         if(words.empty()){
+            if(isEven && !scaleArgs.empty()){
+               break;
+            }else{
+               parseError("Wrong number of scaleArgs");
+            }
+         }
+
+         if(isEven){
+            scaleArgs.emplace_back(popInt(words), 0.0f);
+         }else{
+            scaleArgs.back().second = popFloat(words);
+         }
+      }
+
+      if(scaleArgs[0].first != 0){
+         parseError("scaleArgs does not start at frame 0");
+      }
+
+      scaleAnimEx(s1, s2, s3, scaleArgs);
    }else if (command == L"importtae") {
       auto s1 = otherString(inputFile, "input");
       auto s2 = otherOptionalString(outputFile, inputFile + L".json");

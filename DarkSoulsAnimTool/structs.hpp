@@ -164,6 +164,22 @@ namespace SCA{
 }
 
 namespace Anims{
+   static const float frameDelta = 1.0f / 30.0f;
+   static const float frameRate = 30.0f;
+
+   struct ScaleState{
+      float sourceDuration = 0.0f;
+      float resultDuration = 0.0f;
+
+      int sourceFrameCount = 0;
+      int resultFrameCount = 0;
+
+      // These are slightly bigger than they would be because extra,
+      // extrapolated frametimes are needed
+      std::vector<float> sourceToResultFrame;
+      std::vector<float> resultToSourceFrame;
+   };
+
    struct Vector{
       float data[3] = {0};
    };
@@ -174,7 +190,7 @@ namespace Anims{
 
    struct Frame{
       int number = -1;
-      float normalizedTime = 0.0f;
+      float sourceNormalizedTime = 0.0f;
       std::vector<Vector> positions;
       std::vector<Quat> rotations;
       std::vector<Vector> scales;
@@ -183,7 +199,6 @@ namespace Anims{
    struct Animation{
       int boneCount = 0;
       int frameCount = 0;
-      // float duration = 0.0f;
       std::vector<Frame> frames;
    };
 }
