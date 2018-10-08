@@ -21,6 +21,7 @@ struct ScaleAnimSharedData{
    TAE::TaeFile* taeFile = nullptr;
    std::vector<TAE::Event>* taeEvents = nullptr;
 
+   bool hasAnimFile = false;
    std::wstring sourceAnimPath;
    std::wstring destAnimPath;
    std::wstring xmlPath;
@@ -111,9 +112,14 @@ ScaleAnimSharedData* scaleAnimShared(
       std::wstring hkxwin32Dir = getFullPath(dir + L"..\\..\\hkxwin32\\");
       shared->sourceAnimPath = hkxwin32Dir + foundAnim;
 
-      if (fileExists(shared->sourceAnimPath) == false) {
+      if (fileExists(shared->sourceAnimPath)) {
+         shared->hasAnimFile = true;
+      }else{
+         shared->hasAnimFile = false;
+
          wprintf_s(L"Could not find anim file: %s \n", shared->sourceAnimPath.c_str());
-         throw;
+         wprintf_s(L"Continuing anyway \n");
+         // throw;
       }
 
       std::wstring intermediateDir = hkxwin32Dir + L"DSAnimTool-temp\\";
@@ -122,37 +128,41 @@ ScaleAnimSharedData* scaleAnimShared(
       shared->xmlPath = intermediateDir + foundAnim + L".xml";
    }
 
-   // Dest paths
-   {
-      std::wstring dir, fileName;
-      getPathInfo(destTaePath, dir, fileName);
-      std::wstring hkxwin32Dir = getFullPath(dir + L"..\\..\\hkxwin32\\");
-      shared->destAnimPath = hkxwin32Dir + foundAnim;
-   }
-
-   hkxcmdHkxToXml(shared->sourceAnimPath.c_str(), shared->xmlPath.c_str());
-
-   // Read XML
-   {
-      shared->xml.LoadFile(utf16ToUtf8(shared->xmlPath).c_str());
-
-      auto packFileElement = shared->xml.FirstChildElement("hkpackfile");
-      auto dataElement = packFileElement->FirstChildElement("hksection");
-      if (!dataElement->Attribute("name", "__data__")) {
-         parseError("Bad __data__");
+   if(shared->hasAnimFile){
+      // Dest paths
+      {
+         std::wstring dir, fileName;
+         getPathInfo(destTaePath, dir, fileName);
+         std::wstring hkxwin32Dir = getFullPath(dir + L"..\\..\\hkxwin32\\");
+         shared->destAnimPath = hkxwin32Dir + foundAnim;
       }
 
-      shared->scaElement = findAll(dataElement, "class", "hkaSplineCompressedAnimation")[0];
-      shared->motionElement = findAll(dataElement, "class", "hkaDefaultAnimatedReferenceFrame")[0];
+      hkxcmdHkxToXml(shared->sourceAnimPath.c_str(), shared->xmlPath.c_str());
 
-      std::string text = findAll(shared->scaElement, "name", "numberOfFloatTracks")[0]->GetText();
-      if(text == "0"){
-         parseError("Float tracks are not supported yet");
+      // Read XML
+      {
+         shared->xml.LoadFile(utf16ToUtf8(shared->xmlPath).c_str());
+
+         auto packFileElement = shared->xml.FirstChildElement("hkpackfile");
+         auto dataElement = packFileElement->FirstChildElement("hksection");
+         if (!dataElement->Attribute("name", "__data__")) {
+            parseError("Bad __data__");
+         }
+
+         shared->scaElement = findAll(dataElement, "class", "hkaSplineCompressedAnimation")[0];
+         shared->motionElement = findAll(dataElement, "class", "hkaDefaultAnimatedReferenceFrame")[0];
+
+         std::string text = findAll(shared->scaElement, "name", "numberOfFloatTracks")[0]->GetText();
+         if(text == "0"){
+            parseError("Float tracks are not supported yet");
+         }
       }
    }
 
    createBackupFile(destTaePath);
-   createBackupFile(shared->destAnimPath);
+   if(shared->hasAnimFile){
+      createBackupFile(shared->destAnimPath);
+   }
 
    return shared;
 }
@@ -185,28 +195,30 @@ void scaleAnim(
       writeTaeFile(destTaePath, shared->taeFile);
    }
 
-   wprintf_s(L"Scaling anim... \n");
+   if(shared->hasAnimFile){
+      wprintf_s(L"Scaling anim... \n");
 
-   auto scaleDurationXml = [speedMult](XMLElement* e, bool inverse = false){
-      float duration = (float)(atof(e->GetText()));
-      if(inverse){
-         duration *= speedMult;
-      }else{
-         duration /= speedMult;
-      }
-      char buffer[32];
-      sprintf(buffer, "%f", duration);
-      e->SetText(buffer);
-   };
-   scaleDurationXml(findAll(shared->motionElement, "name", "duration")[0]);
-   scaleDurationXml(findAll(shared->scaElement, "name", "duration")[0]);
-   scaleDurationXml(findAll(shared->scaElement, "name", "blockDuration")[0]);
-   scaleDurationXml(findAll(shared->scaElement, "name", "blockInverseDuration")[0], true);
-   scaleDurationXml(findAll(shared->scaElement, "name", "frameDuration")[0]);
+      auto scaleDurationXml = [speedMult](XMLElement* e, bool inverse = false){
+         float duration = (float)(atof(e->GetText()));
+         if(inverse){
+            duration *= speedMult;
+         }else{
+            duration /= speedMult;
+         }
+         char buffer[32];
+         sprintf(buffer, "%f", duration);
+         e->SetText(buffer);
+      };
+      scaleDurationXml(findAll(shared->motionElement, "name", "duration")[0]);
+      scaleDurationXml(findAll(shared->scaElement, "name", "duration")[0]);
+      scaleDurationXml(findAll(shared->scaElement, "name", "blockDuration")[0]);
+      scaleDurationXml(findAll(shared->scaElement, "name", "blockInverseDuration")[0], true);
+      scaleDurationXml(findAll(shared->scaElement, "name", "frameDuration")[0]);
 
-   shared->xml.SaveFile(utf16ToUtf8(shared->xmlPath).c_str());
+      shared->xml.SaveFile(utf16ToUtf8(shared->xmlPath).c_str());
 
-   hkxcmdXmlToHkx(shared->xmlPath.c_str(), shared->destAnimPath.c_str());
+      hkxcmdXmlToHkx(shared->xmlPath.c_str(), shared->destAnimPath.c_str());
+   }
 }
 
 Anims::ScaleState getAnimScaleState(
