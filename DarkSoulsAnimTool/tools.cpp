@@ -153,7 +153,7 @@ ScaleAnimSharedData* scaleAnimShared(
          shared->motionElement = findAll(dataElement, "class", "hkaDefaultAnimatedReferenceFrame")[0];
 
          std::string text = findAll(shared->scaElement, "name", "numberOfFloatTracks")[0]->GetText();
-         if(text == "0"){
+         if(text != "0"){
             parseError("Float tracks are not supported yet");
          }
       }
