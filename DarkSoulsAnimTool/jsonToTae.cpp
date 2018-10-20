@@ -12,21 +12,41 @@ using namespace TAE;
 
 // For debugging unknowns that are written as "123 or 0.000"
 int getUnknown(json::JSON value) {
+   if(value.ToString() == "1.000"){
+      int bp=42;
+   }
+
    if (value.JSONType() == json::JSON::Class::Integral) {
       return value.ToInt();
+   }else if (value.JSONType() == json::JSON::Class::Floating) {
+      // fuck
+      float floatValue = value.ToFloat();
+      int intValue;
+      *(reinterpret_cast<float*>(&intValue)) = floatValue;
+
+      return intValue;
    }
 
    std::string text = value.ToString();
-   for (size_t n = 0; n < text.size(); ++n) {
-      if (text[n] == ' ') {
-         text.resize(n);
-         break;
+   bool isFloat = text.find('.') != std::string::npos && text.find(' ') == std::string::npos;
+   if(isFloat){
+      float floatValue = (float)atof(text.c_str());
+      int intValue;
+      *(reinterpret_cast<float*>(&intValue)) = floatValue;
+
+      return intValue;
+   }else{
+      for (size_t n = 0; n < text.size(); ++n) {
+         if (text[n] == ' ') {
+            text.resize(n);
+            break;
+         }
       }
+
+      int result = atoi(text.c_str());
+
+      return result;
    }
-
-   int result = atoi(text.c_str());
-
-   return result;
 }
 
 void getUnknownArray(json::JSON array, int* source, size_t size) {
